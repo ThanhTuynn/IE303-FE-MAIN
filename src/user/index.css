@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@import 'swiper/css';
+@import 'swiper/css/navigation';
+
+@layer utilities {
+    .zoom-75 {
+      zoom: 75%;
+    }
+  }
+
+  @layer utilities {
+    .animate-slide-up {
+      animation: slide-up 0.3s ease-out;
+    }
+  
+    @keyframes slide-up {
+      from {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+  }

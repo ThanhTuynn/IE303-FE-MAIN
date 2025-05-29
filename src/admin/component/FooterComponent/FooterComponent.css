@@ -1,0 +1,26 @@
+.footer-container {
+  display: flex;
+  align-items: center;
+  padding: 10px 20px;
+}
+
+.footer-text {
+  font-size: 14px;
+  font-weight: bold;
+  color: #666; 
+}
+
+.social-icons {
+  display: flex;
+  margin-left: 15px;
+  gap: 10px; 
+}
+
+.social-icon {
+  font-size: 20px;
+  color: #333; 
+}
+
+.social-icon:hover {
+  color: #cc1b1b; 
+}

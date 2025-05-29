@@ -1,0 +1,171 @@
+.accountinfo-container {
+  .main-content {
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+
+    .left-column {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      .account-info {
+        text-align: center;
+
+        .account-avatar {
+          .account-image {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #ddd;
+          }
+        }
+      }
+    }
+
+    .right-column {
+      flex: 2;
+
+      .account-form {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+
+        .form-group {
+          display: flex;
+          flex-direction: column;
+
+          label {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 5px;
+          }
+
+          input {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+          }
+
+          input[readonly] {
+            background-color: #f9f9f9;
+            cursor: not-allowed;
+          }
+        }
+
+        .form-actions {
+          display: flex;
+          justify-content: space-between;
+          margin-top: 20px;
+
+          .change-password-button {
+            background-color: #4a2626;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+          }
+
+          .update-button {
+            background-color: #e0e0e0;
+            color: #a0a0a0;
+            cursor: not-allowed;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+
+            &.active {
+              background-color: #f6eaa7;
+              color: #a68a01;
+              cursor: pointer;
+            }
+
+            &:hover {
+              background-color: #d4c89f;
+            }
+          }
+        }
+      }
+      .change-password-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        .modal-content {
+          background: #fff;
+          padding: 20px;
+          border-radius: 10px;
+          width: 400px;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+
+          h3 {
+            margin-bottom: 20px;
+            text-align: center;
+          }
+
+          .form-group {
+            margin-bottom: 15px;
+
+            .password-input-wrapper {
+              position: relative;
+
+              input {
+                width: 100%;
+                padding: 10px;
+                border: 1px solid #ddd;
+                border-radius: 5px;
+                margin-top: 10px;
+              }
+
+              .toggle-password {
+                position: absolute;
+                top: 50%;
+                right: 10px;
+                cursor: pointer;
+                font-size: 18px;
+                color: #888;
+                margin-top: -10px;
+
+                &:hover {
+                  color: #333;
+                }
+              }
+            }
+          }
+
+          .modal-actions {
+            display: flex;
+            justify-content: space-between;
+
+            button {
+              padding: 10px 20px;
+              border: none;
+              border-radius: 5px;
+              cursor: pointer;
+
+              &:first-child {
+                background-color: #ccc;
+                color: #333;
+              }
+
+              &:last-child {
+                background-color: #4caf50;
+                color: #fff;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

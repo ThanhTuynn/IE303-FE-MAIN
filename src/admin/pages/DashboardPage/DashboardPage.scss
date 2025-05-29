@@ -1,0 +1,205 @@
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  background-color: #f9f9f9;
+
+  .main-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+
+    .stats-bar {
+      display: flex;
+      justify-content: space-between;
+      gap: 15px; /* Khoảng cách giữa các stat-item */
+      margin-bottom: 20px;
+      margin-left: 20px;
+      margin-right: 20px;
+
+      .stat-item {
+        display: flex;
+        align-items: center;
+        background-color: #fff;
+        border-radius: 8px;
+        padding: 15px 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        flex: 1;
+        gap: 15px; /* Khoảng cách giữa icon và nội dung */
+      }
+
+      .stat-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        color: #fff;
+        font-size: 24px;
+      }
+
+      .stat-content h3 {
+        font-size: 16px;
+        font-weight: bold;
+        margin: 0;
+        color: #333;
+      }
+
+      .stat-content p {
+        font-size: 20px;
+        font-weight: bold;
+        margin: 5px 0;
+        color: #333;
+      }
+
+      .stat-content span {
+        font-size: 14px;
+        color: #888;
+      }
+    }
+
+    .filter-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      background-color: #f9f9f9;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+      .filter-left {
+        display: flex;
+        align-items: center;
+
+        .filter-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+
+          input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            outline: none;
+            font-size: 14px;
+          }
+        }
+      }
+
+      .filter-right {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+
+        .filter-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+
+          label {
+            font-size: 14px;
+            font-weight: bold;
+          }
+
+          select,
+          .ant-picker {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            outline: none;
+          }
+
+          .reset-btn {
+            padding: 8px 12px;
+            background-color: #ff4d4f;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+
+            &:hover {
+              background-color: #d9363e;
+            }
+          }
+        }
+      }
+    }
+
+    .table-container {
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      margin-bottom: 20px;
+
+      .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+
+        th,
+        td {
+          padding: 10px;
+          text-align: left;
+          border-bottom: 1px solid #ddd;
+        }
+
+        th {
+          background-color: #f4f4f4;
+          font-weight: bold;
+        }
+
+        .status {
+          padding: 5px 10px;
+          border-radius: 5px;
+          font-size: 12px;
+          font-weight: bold;
+          text-transform: capitalize;
+
+          &.success {
+            background-color: #d4edda;
+            color: #155724;
+          }
+
+          &.warning {
+            background-color: #fff3cd;
+            color: #856404;
+          }
+
+          &.error {
+            background-color: #f8d7da;
+            color: #721c24;
+          }
+        }
+
+        .payment-btn {
+          padding: 5px 10px;
+          border: none;
+          border-radius: 5px;
+          font-size: 12px;
+          cursor: pointer;
+          text-transform: capitalize;
+
+          &.bank {
+            background-color: #d4edda;
+            color: #155724;
+          }
+
+          &.cash {
+            background-color: #cce5ff;
+            color: #004085;
+          }
+
+          &.momo {
+            background-color: #f8d7da;
+            color: #721c24;
+          }
+        }
+      }
+    }
+  }
+}

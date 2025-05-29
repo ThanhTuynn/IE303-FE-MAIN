@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "useDefineForClassFields": true,
+    "module": "esnext",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,             // ✅ Cho phép import file .js/.jsx
+    "checkJs": false,            // ✅ Không bắt lỗi trong file JS
+    "jsx": "react-jsx",          // ✅ JSX style mới (React 17+)
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,              // ✅ Không xuất file .js khi build
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": false              // ❌ Có thể để true nếu muốn bắt lỗi chặt hơn
+  },
+  "include": ["src"],
+  "exclude": ["node_modules"]
+}

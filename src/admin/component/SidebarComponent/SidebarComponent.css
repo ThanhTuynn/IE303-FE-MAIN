@@ -1,0 +1,93 @@
+.sidebarcomponent {
+  width: 250px;
+  min-height: 100vh;
+  background-color: #f2e9e9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0;
+
+  .logo {
+    margin-bottom: 20px;
+  }
+
+  .logo img {
+    width: 180px;
+    height: auto;
+    margin-left: 10px;
+    margin-right: 10px;
+  }
+
+  .wrapInfo {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  .mainBar,
+  .subBar {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .subBar {
+    margin-top: auto; /* Đẩy subBar xuống dưới cùng */
+  }
+
+  .menu-item {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+
+  .menu-item a {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    color: #333;
+    font-size: 16px;
+    font-weight: 500;
+    transition: background-color 0.3s, color 0.3s;
+  }
+
+  .menu-item a .icon {
+    margin-right: 10px;
+    font-size: 18px;
+  }
+
+  .menu-item a.active {
+    background-color: #cc1b1b;
+    color: #fff;
+  }
+
+  .menu-item a.active .icon {
+    color: #fff;
+  }
+
+  .menu-item a:hover {
+    background-color: #cc1b1b;
+    color: #fff;
+  }
+
+  .menu-item a:hover .icon {
+    color: #fff;
+  }
+
+  .subBar .menu-item a {
+    font-size: 16px;
+  }
+
+  .subBar .menu-item a span {
+    color: #cc1b1b;
+  }
+
+  .subBar .menu-item a .icon {
+    color: #cc1b1b;
+  }
+
+  .subBar .menu-item a:hover span,
+  .subBar .menu-item a:hover .icon {
+    color: #fff;
+  }
+}

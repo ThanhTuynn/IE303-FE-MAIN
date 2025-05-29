@@ -1,0 +1,65 @@
+.topbar-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30px 20px; /* Tăng padding để làm Topbar lớn hơn */
+
+  .topbar-title {
+    font-size: 32px; /* Tăng kích thước font chữ của tiêu đề */
+    font-weight: bold;
+    color: #cc1b1b;
+    text-transform: uppercase;
+    margin: 0;
+  }
+
+  .topbar-actions {
+    display: flex;
+    align-items: center;
+  }
+
+  .topbar-icon {
+    color: #333;
+    cursor: pointer;
+    transition: color 0.3s;
+    font-size: 30px; /* Tăng kích thước icon */
+    margin-right: 25px; /* Tăng khoảng cách giữa các icon */
+  }
+
+  .topbar-icon:hover {
+    color: #cc1b1b;
+  }
+
+  .user-info {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    margin-right: 25px;
+  }
+
+  .user-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    margin-right: 15px;
+    object-fit: cover;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .user-details {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .user-name {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+  }
+
+  .user-role {
+    font-size: 16px;
+    color: #888;
+    margin-top: 6px;
+  }
+}
