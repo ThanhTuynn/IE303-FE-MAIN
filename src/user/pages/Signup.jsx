@@ -1,13 +1,94 @@
 import React, { useState } from 'react';
-import { FaEye, FaEyeSlash } from 'react-icons/fa'; 
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const Signup = () => {
-  const [showPassword, setShowPassword] = useState(false); // State quản lý hiển thị mật khẩu
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false); // State quản lý hiển thị mật khẩu xác nhận
+  // State quản lý dữ liệu form
+  const [formData, setFormData] = useState({
+    fullName: '',
+    username: '',
+    email: '',
+    phoneNumber: '',
+    password: '',
+    confirmPassword: '',
+  });
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Hàm cập nhật state khi input thay đổi
+  const handleInputChange = (e) => {
+    const { placeholder, value } = e.target;
+    let fieldName = '';
+    // Ánh xạ placeholder sang tên trường trong state
+    switch (placeholder) {
+      case 'Họ và tên':
+        fieldName = 'fullName';
+        break;
+      case 'Tên đăng nhập':
+        fieldName = 'username';
+        break;
+      case 'Địa chỉ email':
+        fieldName = 'email';
+        break;
+      case 'Số điện thoại':
+        fieldName = 'phoneNumber';
+        break;
+      case 'Mật khẩu':
+        fieldName = 'password';
+        break;
+      case 'Xác nhận mật khẩu':
+        fieldName = 'confirmPassword';
+        break;
+      default:
+        return; // Bỏ qua các input không khớp
+    }
+    setFormData({ ...formData, [fieldName]: value });
+  };
 
   // Hàm toggle hiển thị mật khẩu
   const togglePassword = () => setShowPassword(!showPassword);
   const toggleConfirmPassword = () => setShowConfirmPassword(!showConfirmPassword);
+
+  // Hàm xử lý submit form
+  const handleSubmit = async (event) => {
+    event.preventDefault(); // Ngăn chặn submit form mặc định
+
+    // Kiểm tra mật khẩu khớp
+    if (formData.password !== formData.confirmPassword) {
+      alert('Mật khẩu và xác nhận mật khẩu không khớp!');
+      return;
+    }
+
+    // Chuẩn bị dữ liệu gửi đi (loại bỏ confirmPassword)
+    const { confirmPassword, ...dataToSend } = formData;
+    // Backend sẽ tự gán role và createdAt
+
+    try {
+      const response = await fetch('http://localhost:8080/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dataToSend),
+      });
+
+      const result = await response.json(); // Backend trả về RegisterResponse { success: boolean, message: string }
+
+      if (response.ok && result.success) { // Kiểm tra status 200 và success: true
+        alert('Đăng ký thành công! Vui lòng đăng nhập.');
+        // Chuyển hướng đến trang đăng nhập
+        // Lưu ý: Bạn cần cấu hình React Router hoặc tương tự để chuyển hướng
+        window.location.href = '/login'; // Ví dụ chuyển hướng đơn giản
+      } else {
+        // Xử lý lỗi từ backend
+        alert('Đăng ký thất bại: ' + (result.message || 'Có lỗi xảy ra.'));
+      }
+
+    } catch (error) {
+      console.error('Error during registration:', error);
+      alert('Đã xảy ra lỗi kết nối đến server. Vui lòng thử lại.');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#f9f9f9] font-kanit flex flex-col">
@@ -28,26 +109,35 @@ const Signup = () => {
         <div className="w-full md:w-1/2 bg-[#fefcf9] flex items-center justify-center px-6 pt-0 pb-12">
           <div className="w-full max-w-md">
             <h2 className="text-5xl font-bold text-black mb-6 text-left">ĐĂNG KÝ</h2>
-            <form className="space-y-4">
+            {/* Gắn handleSubmit vào form */}
+            <form className="space-y-4" onSubmit={handleSubmit}>
               <input
                 type="text"
                 placeholder="Họ và tên"
                 className="w-full border-b border-gray-400 py-2 bg-transparent focus:outline-none"
+                value={formData.fullName}
+                onChange={handleInputChange}
               />
               <input
                 type="text"
                 placeholder="Tên đăng nhập"
                 className="w-full border-b border-gray-400 py-2 bg-transparent focus:outline-none"
+                value={formData.username}
+                onChange={handleInputChange}
               />
               <input
                 type="email"
                 placeholder="Địa chỉ email"
                 className="w-full border-b border-gray-400 py-2 bg-transparent focus:outline-none"
+                value={formData.email}
+                onChange={handleInputChange}
               />
               <input
                 type="tel"
                 placeholder="Số điện thoại"
                 className="w-full border-b border-gray-400 py-2 bg-transparent focus:outline-none"
+                value={formData.phoneNumber}
+                onChange={handleInputChange}
               />
               {/* Mật khẩu */}
               <div className="relative">
@@ -55,6 +145,8 @@ const Signup = () => {
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Mật khẩu"
                   className="w-full border-b border-gray-400 py-2 bg-transparent focus:outline-none"
+                  value={formData.password}
+                  onChange={handleInputChange}
                 />
                 <button
                   type="button"
@@ -71,6 +163,8 @@ const Signup = () => {
                   type={showConfirmPassword ? 'text' : 'password'}
                   placeholder="Xác nhận mật khẩu"
                   className="w-full border-b border-gray-400 py-2 bg-transparent focus:outline-none"
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
                 />
                 <button
                   type="button"
