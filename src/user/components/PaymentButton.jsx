@@ -55,12 +55,14 @@ const PaymentButton = ({
                     })
                 );
 
-                // Redirect to payment URL
+                // Redirect to payment URL - DO NOT call onSuccess here
+                // onSuccess will be called when user returns from PayOS
                 window.location.href = result.paymentUrl;
 
-                if (onSuccess) {
-                    onSuccess(result);
-                }
+                // Don't call onSuccess here as payment is not completed yet
+                // if (onSuccess) {
+                //     onSuccess(result);
+                // }
             } else {
                 throw new Error(result.message || "Failed to create payment");
             }

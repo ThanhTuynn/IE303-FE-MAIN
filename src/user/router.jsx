@@ -17,6 +17,7 @@ import Signup from "./pages/Signup";
 import Login from "./pages/Login";
 import Payment from "./pages/Payment";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentResult from "./pages/PaymentResult";
 import TestPayment from "./pages/TestPayment";
 import DemoPayment from "./pages/DemoPayment";
 import ChangeProfile from "./pages/ChangeProfile";
@@ -47,6 +48,7 @@ const App = () => {
                     <Route path="login" element={<Login />} />
                     <Route path="payment" element={<Payment />} />
                     <Route path="payment-success" element={<PaymentSuccess />} />
+                    <Route path="payment-result" element={<PaymentResult />} />
                     <Route path="test-payment" element={<TestPayment />} />
                     <Route path="demo-payment" element={<DemoPayment />} />
                     <Route path="change-profile" element={<ChangeProfile />} />
