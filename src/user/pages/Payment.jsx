@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { CheckCircle, XCircle } from "lucide-react"; // Icons from Lucide
 import AddressChangePopup from "../components/AddressChangePopup";
+import PaymentButton from "../components/PaymentButton";
 import { useNavigate } from "react-router-dom";
 
 const Payment = () => {
@@ -31,6 +32,22 @@ const Payment = () => {
     const shippingFee = 10000;
     const discount = 20000;
     const totalAmount = totalPrice + shippingFee - discount;
+
+    // Sample order items for payment
+    const orderItems = [
+        { name: "Bánh mì thịt", quantity: 1, price: 20000 },
+        { name: "Bánh mì trứng", quantity: 1, price: 20000 },
+        { name: "Nước uống", quantity: 1, price: 10000 },
+    ];
+
+    // Customer info for PayOS
+    const customerInfo = {
+        name: receiverName,
+        email: "customer@unifoodie.com",
+        phone: phoneNumber.replace("(+84) ", "0"),
+    };
+
+    const orderId = `PAY_${Date.now()}`;
 
     const handleAddressChange = () => {
         const updatedAddress = `${receiverName} (+84) ${phoneNumber} ${newAddress}`;
@@ -130,24 +147,71 @@ const Payment = () => {
                     </div>
 
                     {/* Đặt hàng Button */}
-                    <div className="flex justify-center mt-6">
-                        <button
-                            className="w-1/3 bg-red-600 hover:bg-red-700 text-white py-2 rounded-full shadow-md"
-                            onClick={() => {
-                                const onlineMethods = ["Chuyển khoản ngân hàng", "MOMO", "ZaloPay"];
+                    <div className="flex flex-col gap-3 mt-6">
+                        {/* PayOS Payment Button - Recommended */}
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div className="flex items-center gap-2 mb-2">
+                                <span className="text-blue-600 font-semibold">
+                                    💳 Thanh toán trực tuyến (Khuyến nghị)
+                                </span>
+                                <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                                    Nhanh & An toàn
+                                </span>
+                            </div>
+                            <PaymentButton
+                                orderId={orderId}
+                                amount={totalAmount}
+                                description={`Đơn hàng UniFoodie - ${orderItems.length} món`}
+                                customerInfo={customerInfo}
+                                items={orderItems}
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium"
+                                onSuccess={(result) => {
+                                    console.log("PayOS payment created:", result);
+                                    navigate("/payment-success", {
+                                        state: {
+                                            orderCode: result.orderCode,
+                                            amount: totalAmount,
+                                            items: orderItems,
+                                            customerInfo,
+                                        },
+                                    });
+                                }}
+                                onError={(error) => {
+                                    console.error("PayOS payment error:", error);
+                                    alert("Tạo thanh toán PayOS thất bại: " + error.message);
+                                }}
+                            />
+                            <p className="text-xs text-gray-600 mt-1">
+                                Hỗ trợ thanh toán qua ngân hàng, ví điện tử và thẻ ATM
+                            </p>
+                        </div>
 
-                                if (onlineMethods.includes(paymentMethod)) {
-                                    navigate("/qr-payment", { state: { method: paymentMethod } });
-                                } else {
-                                    setShowOrderSuccess(true); // Hiện popup
-                                    setTimeout(() => {
-                                        navigate("/cart"); // Quay về sau 3s
-                                    }, 5000);
-                                }
-                            }}
-                        >
-                            Đặt hàng
-                        </button>
+                        {/* Traditional Payment Button */}
+                        <div className="text-center">
+                            <div className="flex items-center my-3">
+                                <div className="flex-1 border-t border-gray-300"></div>
+                                <span className="px-3 text-gray-500 text-sm">hoặc</span>
+                                <div className="flex-1 border-t border-gray-300"></div>
+                            </div>
+
+                            <button
+                                className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-medium"
+                                onClick={() => {
+                                    const onlineMethods = ["Chuyển khoản ngân hàng", "MOMO", "ZaloPay"];
+
+                                    if (onlineMethods.includes(paymentMethod)) {
+                                        navigate("/qr-payment", { state: { method: paymentMethod } });
+                                    } else {
+                                        setShowOrderSuccess(true); // Hiện popup
+                                        setTimeout(() => {
+                                            navigate("/cart"); // Quay về sau 3s
+                                        }, 5000);
+                                    }
+                                }}
+                            >
+                                Đặt hàng với {paymentMethod}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -345,6 +409,10 @@ const Payment = () => {
                                 {
                                     label: "Tiền mặt",
                                     icon: "https://res.cloudinary.com/dbr85jktp/image/upload/v1748287327/CASH_ypopzk.png",
+                                },
+                                {
+                                    label: "PayOS - Thanh toán trực tuyến",
+                                    icon: "https://res.cloudinary.com/dai92e7cq/image/upload/v1748287590/payos-logo_hxqwdi.png",
                                 },
                                 {
                                     label: "Chuyển khoản ngân hàng",
