@@ -2,9 +2,73 @@ import React, { useState } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const Login = () => {
+  // State quản lý dữ liệu form
+  const [formData, setFormData] = useState({
+    usernameOrEmail: '',
+    password: '',
+  });
+
   const [showPassword, setShowPassword] = useState(false);
 
+  // Hàm cập nhật state khi input thay đổi
+  const handleInputChange = (e) => {
+    const { placeholder, value } = e.target;
+    // Ánh xạ placeholder sang tên trường trong state
+    if (placeholder === 'Tên đăng nhập hoặc Email của bạn *') { // Cập nhật placeholder
+      setFormData({ ...formData, usernameOrEmail: value });
+    } else if (placeholder === 'Mật khẩu *') {
+      setFormData({ ...formData, password: value });
+    }
+  };
+
   const togglePassword = () => setShowPassword(!showPassword);
+
+  // Hàm xử lý submit form
+  const handleSubmit = async (event) => {
+    event.preventDefault(); // Ngăn chặn submit form mặc định
+
+    // Chuẩn bị dữ liệu gửi đi
+    // Backend API login của bạn nhận 'username' và 'password'
+    // Cần đảm bảo backend xử lý login bằng username HOẶC email HOẶC sdt
+    // Dựa trên code backend hiện tại, API login chỉ nhận 'username'.
+    // Nếu bạn muốn login bằng email hoặc số điện thoại, cần sửa backend.
+    // Tạm thời, gửi trường 'username' với giá trị từ input
+    const dataToSend = {
+        username: formData.usernameOrEmail, // Giả định input là username/email/sdt tùy backend xử lý
+        password: formData.password
+    };
+
+    try {
+      const response = await fetch('http://localhost:8080/api/users/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dataToSend),
+      });
+
+      const result = await response.json(); // Backend trả về { token: '...', user: {...} } hoặc { error: '...' }
+
+      if (response.ok) { // Kiểm tra status code 200 (thành công)
+        // Lưu token vào localStorage
+        localStorage.setItem('jwtToken', result.token);
+        // Tùy chọn: lưu thông tin user (không lưu mật khẩu!) để dùng hiển thị trên frontend
+        localStorage.setItem('userData', JSON.stringify(result.user));
+
+        alert('Đăng nhập thành công!');
+        // Chuyển hướng đến trang chủ
+        // Lưu ý: Bạn cần cấu hình React Router hoặc tương tự để chuyển hướng
+        window.location.href = '/'; // Ví dụ chuyển hướng đơn giản
+
+      } else { // Xử lý lỗi (ví dụ: 401 Unauthorized) hoặc lỗi từ backend trả về
+        alert('Đăng nhập thất bại: ' + (result.error || 'Sai tên đăng nhập hoặc mật khẩu.')); // result.error từ backend login nếu có lỗi
+      }
+
+    } catch (error) {
+      console.error('Error during login:', error);
+      alert('Đã xảy ra lỗi kết nối đến server. Vui lòng thử lại.');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#f9f9f9] font-kanit flex flex-col ">
@@ -25,17 +89,21 @@ const Login = () => {
         <div className="w-full md:w-1/2 bg-[#fefcf9] flex items-center justify-center px-6 pt-0 pb-12">
           <div className="w-full max-w-md">
             <h2 className="text-5xl font-bold text-black mb-6 text-left">ĐĂNG NHẬP</h2>
-            <form className="space-y-4">
+            <form className="space-y-4" onSubmit={handleSubmit}>
               <input
-                type="email"
-                placeholder="Địa chỉ email hoặc số điện thoại của bạn *"
+                type="text" // Đổi từ email sang text để người dùng nhập cả username, email hoặc sdt
+                placeholder="Tên đăng nhập hoặc Email của bạn *" // Cập nhật placeholder cho rõ ràng hơn
                 className="w-full border-b border-gray-400 py-2 bg-transparent focus:outline-none"
+                value={formData.usernameOrEmail}
+                onChange={handleInputChange}
               />
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Mật khẩu *"
                   className="w-full border-b border-gray-400 py-2 bg-transparent focus:outline-none"
+                  value={formData.password}
+                  onChange={handleInputChange}
                 />
                 <button
                   type="button"
@@ -60,9 +128,9 @@ const Login = () => {
 
               <div className="text-center mt-4">
                 <p className="text-sm">Hoặc tiếp tục với</p>
-               
+
                 <button
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-full mt-2"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-full mt-2" // Example for Google login, not implemented yet
                   type="button"
                 >
                   Đăng nhập bằng Google

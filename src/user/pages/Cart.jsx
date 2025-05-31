@@ -1,56 +1,117 @@
-import React, { useState } from "react";
-import { Trash, CheckSquare, Square } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import PaymentButton from "../components/PaymentButton";
+import React, { useState, useEffect } from 'react';
+import { Trash, CheckSquare, Square } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const Cart = () => {
-    const navigate = useNavigate();
-    const [items, setItems] = useState([
-        {
-            id: 1,
-            name: "Bánh mì thịt",
-            price: 20000,
-            quantity: 1,
-            checked: true,
-            image: "https://res.cloudinary.com/dbr85jktp/image/upload/v1746406267/banhmithapcam_gzfrza.webp",
-        },
-        {
-            id: 2,
-            name: "Bánh mì trứng",
-            price: 20000,
-            quantity: 1,
-            checked: true,
-            image: "https://res.cloudinary.com/dbr85jktp/image/upload/v1746406267/banhmithapcam_gzfrza.webp",
-        },
-        {
-            id: 3,
-            name: "Bánh mì thập cẩm",
-            price: 20000,
-            quantity: 1,
-            checked: true,
-            image: "https://res.cloudinary.com/dbr85jktp/image/upload/v1746406267/banhmithapcam_gzfrza.webp",
-        },
-    ]);
+  const navigate = useNavigate();
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [userId, setUserId] = useState(null);
 
     const [discountCode, setDiscountCode] = useState("");
     const [discount, setDiscount] = useState(0);
 
-    // Customer info for payment
-    const [customerInfo] = useState({
-        name: "Người dùng UniFoodie",
-        email: "user@unifoodie.com",
-        phone: "0123456789",
-    });
+  useEffect(() => {
+    const token = localStorage.getItem('jwtToken');
+    const userData = localStorage.getItem('userData');
 
-    const handleQuantityChange = (id, delta) => {
+    if (!token || !userData) {
+      alert("Please log in to view your cart.");
+      navigate('/login');
+      return;
+    }
+
+    try {
+        const user = JSON.parse(userData);
+        setUserId(user.id);
+    } catch (e) {
+        console.error("Failed to parse user data from localStorage:", e);
+        alert("Error retrieving user data.");
+        navigate('/login');
+        return;
+    }
+
+    const fetchCart = async () => {
+      try {
+        setLoading(true);
+        if (userId) {
+            const response = await axios.get(`http://localhost:8080/api/carts/${userId}`, {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
+            setItems(response.data.items);
+        }
+        setLoading(false);
+      } catch (err) {
+        setError(err);
+        setLoading(false);
+        console.error("Error fetching cart:", err);
+        alert("Failed to fetch cart data.");
+      }
+    };
+
+    if (userId) {
+       fetchCart();
+    }
+
+  }, [userId]);
+
+  const handleQuantityChange = async (id, delta) => {
+    const token = localStorage.getItem('jwtToken');
+    // Optimistically update the state
+    setItems((prevItems) =>
+      prevItems.map((item) =>
+        item.foodId === id
+          ? { ...item, quantity: Math.max(1, item.quantity + delta) }
+          : item
+      )
+    );
+
+    const newQuantity = items.find(item => item.foodId === id).quantity + delta; // Calculate new quantity
+    const finalQuantity = Math.max(1, newQuantity); // Ensure quantity is at least 1
+
+    if (!userId || !token) {
+        alert("User not logged in. Cannot update cart.");
+        return;
+    }
+
+    try {
+        // Call backend API to update the quantity
+        await axios.put(`http://localhost:8080/api/carts/${userId}/items/${id}?quantity=${finalQuantity}`, null, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        console.log(`Quantity updated for foodId ${id} to ${finalQuantity}`);
+
+    } catch (err) {
+        console.error("Error updating quantity on backend:", err);
+        alert("Failed to update item quantity.");
+        // Revert the optimistic update on error
         setItems((prevItems) =>
-            prevItems.map((item) => (item.id === id ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item))
+          prevItems.map((item) =>
+            item.foodId === id
+              ? { ...item, quantity: item.quantity - delta } // Revert to previous quantity
+              : item
+          )
         );
-    };
+    }
+  };
 
-    const handleCheckboxChange = (id) => {
-        setItems((prevItems) => prevItems.map((item) => (item.id === id ? { ...item, checked: !item.checked } : item)));
-    };
+  const handleCheckboxChange = (id) => {
+    setItems((prevItems) =>
+      prevItems.map((item) =>
+        item.foodId === id ? { ...item, checked: !item.checked } : item
+      )
+    );
+  };
+
+  const handleRemoveItem = (id) => {
+    setItems((prevItems) => prevItems.filter((item) => item.foodId !== id));
+  };
 
     const handleRemoveItem = (id) => {
         setItems((prevItems) => prevItems.filter((item) => item.id !== id));

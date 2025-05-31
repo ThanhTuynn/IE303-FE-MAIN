@@ -1,49 +1,129 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Autoplay } from "swiper/modules";
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios'; // Import axios for API calls
 
 const Homepage = () => {
-    const [quantities, setQuantities] = useState([0, 0, 0]);
+    const [quantities, setQuantities] = useState({}); // Change to object to store quantities by food ID
+    const navigate = useNavigate();
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [foods, setFoods] = useState([]); // State to store fetched food data
+    const [loading, setLoading] = useState(true); // State to track loading status
+    const [error, setError] = useState(null); // State to track any errors
+    const [userId, setUserId] = useState(null); // State to store the user ID
 
-    const handleChange = (index, delta) => {
+    useEffect(() => {
+        const token = localStorage.getItem('jwtToken');
+        setIsLoggedIn(!!token);
+
+        // Get user data from localStorage and set userId
+        const userData = localStorage.getItem('userData');
+        if (userData) {
+            try {
+                const user = JSON.parse(userData);
+                setUserId(user.id); // Assuming user ID is stored as 'id'
+            } catch (e) {
+                console.error("Failed to parse user data from localStorage:", e);
+            }
+        }
+
+        // Fetch food data from the backend
+        const fetchFoods = async () => {
+            try {
+                // Replace with your backend API URL
+                const response = await axios.get('http://localhost:8080/api/foods');
+                setFoods(response.data);
+                // Initialize quantities state based on fetched foods
+                const initialQuantities = {};
+                response.data.forEach(food => {
+                    initialQuantities[food.id] = 0;
+                });
+                setQuantities(initialQuantities);
+                setLoading(false);
+            } catch (err) {
+                setError(err);
+                setLoading(false);
+                console.error("Error fetching foods:", err);
+            }
+        };
+
+        fetchFoods();
+    }, []);
+
+    const handleChange = (foodId, delta) => {
         setQuantities((prev) => {
-            const updated = [...prev];
-            updated[index] = Math.max(0, updated[index] + delta);
+            const updated = { ...prev };
+            updated[foodId] = Math.max(0, (updated[foodId] || 0) + delta);
             return updated;
         });
     };
 
-    const handleAddToCart = (index) => {
-        if (quantities[index] > 0) {
-            alert(`Đã thêm ${products[index].name} vào giỏ hàng!`);
+    const handleAddToCart = async (food) => {
+        const quantity = quantities[food.id];
+        const token = localStorage.getItem('jwtToken'); // Get JWT token from localStorage
+
+        if (!token) {
+            alert("Please log in to add items to your cart.");
+            navigate('/login');
+            return; // Stop if not logged in
+        }
+
+        if (quantity > 0 && userId) {
+            try {
+                const itemToAdd = {
+                    foodId: food.id,
+                    name: food.name,
+                    price: food.price,
+                    quantity: quantity,
+                    imageUrl: food.image // Assuming 'image' field from backend corresponds to imageUrl
+                };
+
+                // Make the API call to add item to cart with Authorization header
+                const response = await axios.post(
+                    `http://localhost:8080/api/carts/${userId}/items`,
+                    itemToAdd,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${token}` // Include the JWT token
+                        }
+                    }
+                );
+                console.log("Item added to cart:", response.data);
+                alert(`Đã thêm ${quantity} ${food.name} vào giỏ hàng!`);
+
+                // Optionally reset the quantity counter after adding to cart
+                setQuantities(prev => ({ ...prev, [food.id]: 0 }));
+
+            } catch (err) {
+                console.error("Error adding item to cart:", err);
+                alert("Failed to add item to cart.");
+            }
+        } else if (quantity === 0) {
+            alert("Please select a quantity greater than 0.");
+        } else if (!userId) {
+             // This case is now handled by the initial token check
+             alert("Please log in to add items to your cart.");
+             navigate('/login');
         }
     };
 
-    const products = [
-        {
-            name: "Bánh mì thịt nướng",
-            price: "20.000đ",
-            desc: "Gồm bánh mì giòn, thịt nướng thơm ngon, kèm rau sống tươi, dưa leo và đồ chua, tạo nên hương vị đậm đà, hấp dẫn cho bữa sáng nhanh chóng và tiện lợi.",
-            image: "https://res.cloudinary.com/dbr85jktp/image/upload/v1746384045/banhmithapcam_arredm.webp",
-        },
-        {
-            name: "Cơm tấm Long Xuyên",
-            price: "35.000đ",
-            desc: "Gồm cơm tấm mềm mịn, sườn nướng thơm ngon, kèm bì, chả trứng, và rau sống tươi, tạo nên hương vị đậm đà, hấp dẫn cho bữa ăn nhanh chóng và đầy đủ năng lượng.",
-            image: "https://res.cloudinary.com/dbr85jktp/image/upload/v1746384044/comtam_gum9ve.jpg",
-        },
-        {
-            name: "Sinh tố dâu",
-            price: "20.000đ",
-            desc: "Dâu tươi xay nhuyễn cùng đá và sữa đặc, mang đến ly sinh tố mát lạnh, chua ngọt cân bằng, giàu vitamin – vừa ngon vừa tốt cho sức khỏe.",
-            image: "https://res.cloudinary.com/dbr85jktp/image/upload/v1746426032/sinh_t%E1%BB%91_d%C3%A2u_ondcxh.jpg",
-        },
-    ];
+    const handleLoginClick = () => {
+        navigate('/login');
+    };
+
+    // if (loading) {
+    //     return <div>Loading foods...</div>; // Basic loading indicator
+    // }
+
+    if (error) {
+        return <div>Error loading foods: {error.message}</div>; // Basic error handling
+    }
 
     return (
         <div className="bg-gray-50 text-gray-900 font-kanit min-h-screen">
             {/* Banner */}
-            <section className="w-full">
+            <section className="w-full relative">
                 <Swiper
                     modules={[Navigation, Autoplay]}
                     spaceBetween={0}
@@ -78,6 +158,18 @@ const Homepage = () => {
                         />
                     </SwiperSlide>
                 </Swiper>
+
+                {/* Login CTA Button (visible only if not logged in)*/}
+                {!isLoggedIn && (
+                    <div className="absolute inset-0 flex items-center justify-center z-10">
+                        <button
+                            onClick={handleLoginClick}
+                            className="bg-red-600 hover:bg-red-700 text-white text-xl md:text-2xl font-bold py-3 px-8 rounded-full shadow-lg transition-colors duration-300"
+                        >
+                            ĐĂNG NHẬP NGAY
+                        </button>
+                    </div>
+                )}
             </section>
 
             {/* Gợi ý cho bạn */}
@@ -98,32 +190,33 @@ const Homepage = () => {
                     }}
                     className="px-4"
                 >
-                    {products.map((item, idx) => (
-                        <SwiperSlide key={idx}>
+                    {foods.map((food) => ( // Use fetched foods data
+                        <SwiperSlide key={food.id}> 
                             <div className="product-card">
-                                <img src={item.image} alt={item.name} className="product-image" />
-                                <h3 className="product-title">{item.name}</h3>
-                                <p className="product-price">{item.price}</p>
-                                <p className="product-description">{item.desc}</p>
+                                <img src={food.image} alt={food.name} className="product-image" />
+                                <h3 className="product-title">{food.name}</h3>
+                                {/* Assuming price is stored as a number and needs formatting */}
+                                <p className="product-price">{food.price.toLocaleString('vi-VN')}đ</p>
+                                <p className="product-description">{food.description}</p>
                                 <div className="flex justify-between items-center gap-4">
                                     <div className="quantity-control">
                                         <button
-                                            onClick={() => handleChange(idx, -1)}
+                                            onClick={() => handleChange(food.id, -1)} // Pass food.id
                                             className="quantity-btn"
-                                            disabled={quantities[idx] <= 0}
+                                            disabled={(quantities[food.id] || 0) <= 0} // Use quantity from state
                                         >
                                             −
                                         </button>
-                                        <span className="quantity-display">{quantities[idx]}</span>
-                                        <button onClick={() => handleChange(idx, 1)} className="quantity-btn">
+                                        <span className="quantity-display">{quantities[food.id] || 0}</span>
+                                        <button onClick={() => handleChange(food.id, 1)} className="quantity-btn">
                                             +
                                         </button>
                                     </div>
                                     <button
-                                        onClick={() => handleAddToCart(idx)}
-                                        disabled={quantities[idx] === 0}
+                                        onClick={() => handleAddToCart(food)} 
+                                        disabled={(quantities[food.id] || 0) === 0 || !userId} // Disable if quantity is 0 or not logged in
                                         className={`px-4 py-2 text-sm rounded-lg font-semibold transition-all duration-300 ${
-                                            quantities[idx] === 0
+                                            (quantities[food.id] || 0) === 0 || !userId
                                                 ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                                                 : "btn-primary"
                                         }`}

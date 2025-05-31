@@ -1,20 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaUser, FaLock, FaBell, FaSignOutAlt, FaHeart, FaHistory } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import axios from 'axios';
 
 const ChangeProfile = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user: initialUserData } = location.state || {};
 
-  // Trạng thái form
   const [formData, setFormData] = useState({
-    username: 'pu0406@',
-    name: 'Võ Thị Phương Uyên',
-    birthDate: '2004-06-04',
-    gender: 'Nữ',
-    email: 'phuonguyen6372@gmail.com',
-    phone: '0382868383',
-    address: 'KTX Khu A',
+    username: initialUserData?.username || '',
+    name: initialUserData?.name || '',
+    birthDate: initialUserData?.dateOfBirth ? new Date(initialUserData.dateOfBirth).toISOString().split('T')[0] : '',
+    gender: initialUserData?.gender || '',
+    email: initialUserData?.email || '',
+    phone: initialUserData?.phoneNumber || '',
+    address: initialUserData?.address || '',
   });
+
+  useEffect(() => {
+    if (!initialUserData) {
+      console.warn("User data not found in location state. Consider fetching from API or redirecting.");
+    }
+  }, [initialUserData, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -24,45 +32,102 @@ const ChangeProfile = () => {
     }));
   };
 
-  const handleSave = () => {
-    console.log("Dữ liệu đã lưu:", formData);
-    alert("Thông tin đã được lưu!");
-    setTimeout(() => {
-      navigate('/profile');
-    }, 100); // để alert hiển thị xong
+  const handleSave = async () => {
+    const storedUserData = localStorage.getItem('userData');
+    const jwtToken = localStorage.getItem('jwtToken');
+
+    if (!storedUserData || !jwtToken) {
+        alert("User not logged in. Cannot update profile.");
+        return;
+    }
+
+    let currentUser = null;
+    try {
+      currentUser = JSON.parse(storedUserData);
+    } catch (parseError) {
+      alert('Failed to parse user data from local storage.');
+      console.error('Parsing user data error:', parseError);
+      return;
+    }
+
+    const userId = currentUser.id || currentUser._id;
+
+    if (!userId) {
+        alert("User ID not found. Cannot update profile.");
+        return;
+    }
+
+    try {
+      const response = await axios.put(`http://localhost:8080/api/users/${userId}`, formData, {
+        headers: {
+          'Authorization': `Bearer ${jwtToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.status === 200) {
+        const updatedUserData = response.data;
+        localStorage.setItem('userData', JSON.stringify(updatedUserData));
+        alert("Thông tin đã được lưu!");
+        navigate('/profile');
+      } else {
+        alert(`Cập nhật thông tin thất bại: ${response.statusText || 'Unknown error'}`);
+        console.error('Profile update failed:', response);
+      }
+
+    } catch (error) {
+      console.error('Error during profile update:', error);
+       if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+           alert('Phiên đăng nhập hết hạn hoặc không được ủy quyền. Vui lòng đăng nhập lại.');
+        } else {
+          alert('Đã xảy ra lỗi khi cập nhật thông tin. Vui lòng thử lại.');
+        }
+    }
   };
 
   const handleCancel = () => {
-    setTimeout(() => {
-      navigate('/profile');
-    }, 100);
+    navigate('/profile');
   };
 
   return (
     <div className="min-h-screen bg-gray-100 py-10 px-4 flex justify-center items-start font-kanit">
       <div className="flex flex-col md:flex-row bg-white rounded-lg shadow p-6 gap-6 max-w-5xl w-full">
-        {/* Sidebar */}
         <div className="w-full md:w-1/3 border rounded-lg p-4 text-center flex flex-col items-center">
           <img
             src="https://cdn-icons-png.flaticon.com/512/706/706830.png"
             alt="avatar"
             className="w-24 h-24 rounded-full mb-3"
           />
-          <h3 className="text-red-600 font-bold text-lg">{formData.name}</h3>
-          <p className="text-black font-medium">{formData.username}</p>
+          <h3 className="text-red-600 font-bold text-lg">{formData.name || formData.username || 'User'}</h3>
+          <p className="text-black font-medium">{formData.username || formData.email || 'N/A'}</p>
 
           <ul className="mt-6 w-full space-y-3 text-left">
-            <li className="flex items-center text-red-600 font-semibold cursor-pointer">
-              <FaUser className="mr-2" />
-              Thông tin cá nhân
+            <li>
+              <button
+                className="flex items-center text-red-600 font-semibold w-full text-left hover:bg-gray-100 px-2 py-2 rounded"
+                onClick={() => navigate('/profile')}
+              >
+                <FaUser className="mr-2" />
+                Thông tin cá nhân
+              </button>
             </li>
-            <li className="flex items-center text-gray-700 hover:text-red-600 cursor-pointer">
-              <FaLock className="mr-2" />
-              Đổi mật khẩu
+            <li>
+              <button
+                className="flex items-center text-gray-700 hover:text-red-600 w-full text-left hover:bg-gray-100 px-2 py-2 rounded"
+                onClick={() => navigate('/change-password')}
+              >
+                <FaLock className="mr-2" />
+                Đổi mật khẩu
+              </button>
             </li>
-            <li className="flex items-center text-gray-700 hover:text-red-600 cursor-pointer">
-              <FaBell className="mr-2" />
-              Thông báo
+            <li>
+              <button
+                className="flex items-center text-gray-700 hover:text-red-600 w-full text-left hover:bg-gray-100 px-2 py-2 rounded"
+                onClick={() => navigate('/notifications')}
+              >
+                <FaBell className="mr-2" />
+                Thông báo
+              </button>
             </li>
               <li>
                 <button
@@ -73,24 +138,31 @@ const ChangeProfile = () => {
                   Món yêu thích
                 </button>
               </li>
-            
+
               <li>
                 <button
                   className="flex items-center text-gray-700 hover:text-red-600 w-full text-left hover:bg-gray-100 px-2 py-2 rounded"
-                  onClick={() => navigate('/favourite')}
+                  onClick={() => navigate('/order-history')}
                 >
                   <FaHistory className="mr-2" />
                   Lịch sử đặt món
                 </button>
               </li>
-            <li className="flex items-center text-gray-700 hover:text-red-600 cursor-pointer">
-              <FaSignOutAlt className="mr-2" />
-              Đăng xuất
+            <li>
+              <button
+                className="flex items-center text-gray-700 hover:text-red-600 w-full text-left hover:bg-gray-100 px-2 py-2 rounded"
+                onClick={() => {
+                  alert('Đã đăng xuất!');
+                  navigate('/login');
+                }}
+              >
+                <FaSignOutAlt className="mr-2" />
+                Đăng xuất
+              </button>
             </li>
           </ul>
         </div>
 
-        {/* Main content editable */}
         <div className="w-full md:w-2/3 border rounded-lg p-6 relative bg-white">
           <h2 className="text-red-600 font-bold text-xl mb-6">CHỈNH SỬA THÔNG TIN</h2>
           <div className="space-y-4 text-base">
@@ -108,7 +180,7 @@ const ChangeProfile = () => {
                 <input
                   type={type}
                   name={name}
-                  value={formData[name]}
+                  value={formData[name] || ''}
                   onChange={handleChange}
                   disabled={disabled}
                   className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"

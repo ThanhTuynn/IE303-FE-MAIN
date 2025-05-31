@@ -1,30 +1,87 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaUser, FaLock, FaBell, FaSignOutAlt,  FaHeart, FaHistory } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const Notifications = () => {
   const navigate = useNavigate();
 
-  const notifications = [
-    {
-      id: 1,
-      title: 'Món ăn đang được giao đến',
-      content:
-        'Đơn hàng của bạn đang được đội ngũ shipper siêu tốc của UniFoodie mang đến. Vui lòng chú ý điện thoại giúp UniFoodie nhé!!!!',
-    },
-    {
-      id: 2,
-      title: 'Bạn ơi chờ một chút nhé',
-      content:
-        'Nhà hàng đang chuẩn bị món thật nhanh cho bạn.',
-    },
-    {
-      id: 3,
-      title: 'Món ăn đang được giao đến',
-      content:
-        'Đơn hàng của bạn đang được đội ngũ shipper siêu tốc của UniFoodie mang đến. Vui lòng chú ý điện thoại giúp UniFoodie nhé!!!!',
-    },
-  ];
+  // States for notifications
+  const [notifications, setNotifications] = useState([]);
+  const [loadingNotifications, setLoadingNotifications] = useState(true);
+  const [errorNotifications, setErrorNotifications] = useState(null);
+
+  // States for user info in sidebar
+  const [user, setUser] = useState(null);
+  const [loadingUser, setLoadingUser] = useState(true);
+  const [errorUser, setErrorUser] = useState('');
+
+  useEffect(() => {
+    const token = localStorage.getItem('jwtToken');
+    const userData = localStorage.getItem('userData');
+
+    if (!token || !userData) {
+      alert("Please log in to view your notifications.");
+      navigate('/login');
+      return;
+    }
+
+    let currentUser = null;
+    try {
+        currentUser = JSON.parse(userData);
+        // Fetch user info for sidebar
+        const fetchUser = async (id, authToken) => {
+            try {
+                setLoadingUser(true);
+                const userResponse = await axios.get(`http://localhost:8080/api/users/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                setUser(userResponse.data);
+                setLoadingUser(false);
+            } catch (err) {
+                 console.error('Error fetching user data:', err);
+                 setErrorUser('Failed to load user info.');
+                 setLoadingUser(false);
+            }
+        };
+        fetchUser(currentUser.id || currentUser._id, token);
+
+        // Fetch notifications
+        const fetchNotifications = async (id, authToken) => {
+            try {
+                setLoadingNotifications(true);
+                const notificationsResponse = await axios.get(`http://localhost:8080/api/notifications/user/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                setNotifications(notificationsResponse.data);
+                setLoadingNotifications(false);
+            } catch (err) {
+                console.error('Error fetching notifications:', err);
+                 setErrorNotifications('Failed to load notifications.');
+                 setLoadingNotifications(false);
+            }
+        };
+        fetchNotifications(currentUser.id || currentUser._id, token);
+
+
+    } catch (e) {
+        console.error("Failed to parse user data from localStorage:", e);
+         alert("Error retrieving user data. Please log in again.");
+         navigate('/login');
+         // Set error for both sections since we can't get userId
+         setErrorUser('Error retrieving user data.');
+         setErrorNotifications('Error retrieving user data.');
+         setLoadingUser(false);
+         setLoadingNotifications(false);
+         return;
+    }
+
+  }, [navigate]);
+
 
   return (
     <div className="min-h-screen bg-gray-100 py-10 px-4 flex justify-center items-start font-kanit">
@@ -36,8 +93,14 @@ const Notifications = () => {
             alt="avatar"
             className="w-24 h-24 rounded-full mb-3"
           />
-          <h3 className="text-red-600 font-bold text-lg">Võ Thị Phương Uyên</h3>
-          <p className="text-black font-medium">pu0406@</p>
+          {loadingUser && <p>Loading user info...</p>}
+          {errorUser && <p className="text-red-600">{errorUser}</p>}
+          {user && (
+              <>
+                <h3 className="text-red-600 font-bold text-lg">{user.fullName || user.username || 'User'}</h3>
+                <p className="text-black font-medium">{user.username || user.email || 'N/A'}</p>
+              </>
+          )}
 
           <ul className="mt-6 w-full space-y-3 text-left">
             <li>
@@ -75,7 +138,7 @@ const Notifications = () => {
                   Món yêu thích
                 </button>
               </li>
-            
+
               <li>
                 <button
                   className="flex items-center text-gray-700 hover:text-red-600 w-full text-left hover:bg-gray-100 px-2 py-2 rounded"
@@ -103,7 +166,13 @@ const Notifications = () => {
         {/* Main content: Thông báo */}
         <div className="w-full md:w-2/3 border rounded-lg p-6 bg-white">
           <h2 className="text-red-600 font-bold text-xl mb-6">THÔNG BÁO</h2>
-          <div className="space-y-4">
+          {/* {loadingNotifications && <p>Loading notifications...</p>} */}
+          {errorNotifications && <p className="text-red-600">{errorNotifications}</p>}
+          {!loadingNotifications && !errorNotifications && notifications.length === 0 && (
+               <p className="text-gray-600">Bạn không có thông báo nào.</p>
+          )}
+          {!loadingNotifications && !errorNotifications && notifications.length > 0 && (
+               <div className="space-y-4">
             {notifications.map((item) => (
               <div
                 key={item.id}
@@ -116,11 +185,13 @@ const Notifications = () => {
                 />
                 <div className="flex flex-col">
                   <h4 className="font-bold text-sm md:text-base mb-1">{item.title}</h4>
-                  <p className="text-sm text-gray-700 leading-snug">{item.content}</p>
+                  <p className="text-sm text-gray-700 leading-snug">{item.message}</p>
                 </div>
               </div>
             ))}
           </div>
+          )}
+
         </div>
       </div>
     </div>
