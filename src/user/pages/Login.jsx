@@ -1,16 +1,17 @@
 import React, { useState } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { useNavigate, Link } from "react-router-dom";
-import useNotification from "../hooks/useNotification";
+import { toast } from "../components/Toast";
 
 const Login = () => {
-  // State quản lý dữ liệu form
-  const [formData, setFormData] = useState({
-    usernameOrEmail: '',
-    password: '',
-  });
+    // State quản lý dữ liệu form
+    const [formData, setFormData] = useState({
+        usernameOrEmail: "",
+        password: "",
+    });
 
-  const [showPassword, setShowPassword] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     // Hàm cập nhật state khi input thay đổi
     const handleInputChange = (e) => {
@@ -24,9 +25,10 @@ const Login = () => {
 
     const togglePassword = () => setShowPassword(!showPassword);
 
-  // Hàm xử lý submit form
-  const handleSubmit = async (event) => {
-    event.preventDefault(); // Ngăn chặn submit form mặc định
+    // Hàm xử lý submit form
+    const handleSubmit = async (event) => {
+        event.preventDefault(); // Ngăn chặn submit form mặc định
+        setLoading(true);
 
         // Chuẩn bị dữ liệu gửi đi
         // Backend API login của bạn nhận 'username' và 'password'
@@ -60,20 +62,22 @@ const Login = () => {
                 // Dispatch event to notify other components about login
                 window.dispatchEvent(new Event("userLoggedIn"));
 
-        alert('Đăng nhập thành công!');
-        // Chuyển hướng đến trang chủ
-        // Lưu ý: Bạn cần cấu hình React Router hoặc tương tự để chuyển hướng
-        window.location.href = '/'; // Ví dụ chuyển hướng đơn giản
-
-      } else { // Xử lý lỗi (ví dụ: 401 Unauthorized) hoặc lỗi từ backend trả về
-        alert('Đăng nhập thất bại: ' + (result.error || 'Sai tên đăng nhập hoặc mật khẩu.')); // result.error từ backend login nếu có lỗi
-      }
-
-    } catch (error) {
-      console.error('Error during login:', error);
-      alert('Đã xảy ra lỗi kết nối đến server. Vui lòng thử lại.');
-    }
-  };
+                toast.success("Đăng nhập thành công!");
+                // Chuyển hướng đến trang chủ
+                setTimeout(() => {
+                    window.location.href = "/";
+                }, 1000);
+            } else {
+                // Xử lý lỗi (ví dụ: 401 Unauthorized) hoặc lỗi từ backend trả về
+                toast.error("Đăng nhập thất bại: " + (result.error || "Sai tên đăng nhập hoặc mật khẩu.")); // result.error từ backend login nếu có lỗi
+            }
+        } catch (error) {
+            console.error("Login error:", error);
+            toast.error("Đã xảy ra lỗi kết nối đến server. Vui lòng thử lại.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-[#f9f9f9] font-kanit flex flex-col ">
@@ -90,46 +94,48 @@ const Login = () => {
                     </div>
                 </div>
 
-        {/* Right Side – Form đăng nhập */}
-        <div className="w-full md:w-1/2 bg-[#fefcf9] flex items-center justify-center px-6 pt-0 pb-12">
-          <div className="w-full max-w-md">
-            <h2 className="text-5xl font-bold text-black mb-6 text-left">ĐĂNG NHẬP</h2>
-            <form className="space-y-4" onSubmit={handleSubmit}>
-              <input
-                type="text" // Đổi từ email sang text để người dùng nhập cả username, email hoặc sdt
-                placeholder="Tên đăng nhập hoặc Email của bạn *" // Cập nhật placeholder cho rõ ràng hơn
-                className="w-full border-b border-gray-400 py-2 bg-transparent focus:outline-none"
-                value={formData.usernameOrEmail}
-                onChange={handleInputChange}
-              />
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Mật khẩu *"
-                  className="w-full border-b border-gray-400 py-2 bg-transparent focus:outline-none"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                />
-                <button
-                  type="button"
-                  onClick={togglePassword}
-                  className="absolute right-0 top-1/2 transform -translate-y-1/2 text-gray-500"
-                >
-                  {showPassword ? <FaEyeSlash /> : <FaEye />}
-                </button>
-              </div>
-              <button
-                type="submit"
-                className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-full mt-6 shadow"
-              >
-                Đăng nhập
-              </button>
-              <p className="text-sm text-center mt-4">
-                Bạn quên mật khẩu?{' '}
-                <a href="/reset-password" className="text-red-600 font-semibold">
-                  Quên mật khẩu
-                </a>
-              </p>
+                {/* Right Side – Form đăng nhập */}
+                <div className="w-full md:w-1/2 bg-[#fefcf9] flex items-center justify-center px-6 pt-0 pb-12">
+                    <div className="w-full max-w-md">
+                        <h2 className="text-5xl font-bold text-black mb-6 text-left">ĐĂNG NHẬP</h2>
+                        <form className="space-y-4" onSubmit={handleSubmit}>
+                            <input
+                                type="text" // Đổi từ email sang text để người dùng nhập cả username, email hoặc sdt
+                                placeholder="Tên đăng nhập hoặc Email của bạn *" // Cập nhật placeholder cho rõ ràng hơn
+                                className="w-full border-b border-gray-400 py-2 bg-transparent focus:outline-none"
+                                value={formData.usernameOrEmail}
+                                onChange={handleInputChange}
+                            />
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="Mật khẩu *"
+                                    className="w-full border-b border-gray-400 py-2 bg-transparent focus:outline-none"
+                                    value={formData.password}
+                                    onChange={handleInputChange}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={togglePassword}
+                                    className="absolute right-0 top-1/2 transform -translate-y-1/2 text-gray-500"
+                                >
+                                    {showPassword ? <FaEyeSlash /> : <FaEye />}
+                                </button>
+                            </div>
+                            <button
+                                type="submit"
+                                className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-full mt-6 shadow"
+                                disabled={loading}
+                            >
+                                {loading ? "Đang đăng nhập..." : "Đăng nhập"}
+                            </button>
+
+                            <p className="text-sm text-center mt-4">
+                                Bạn quên mật khẩu?{" "}
+                                <a href="/reset-password" className="text-red-600 font-semibold">
+                                    Quên mật khẩu
+                                </a>
+                            </p>
 
                             <div className="text-center mt-4">
                                 <p className="text-sm">Hoặc tiếp tục với</p>

@@ -1,131 +1,142 @@
-import React, { useState, useEffect } from "react";
-import { X, CheckCircle, AlertCircle, AlertTriangle, Info } from "lucide-react";
+import React, { useEffect } from "react";
 
-const Toast = ({ id, message, type = "info", duration = 5000, onClose, position = "top-right" }) => {
-    const [isVisible, setIsVisible] = useState(false);
-    const [isLeaving, setIsLeaving] = useState(false);
-
-    useEffect(() => {
-        // Show animation
-        setTimeout(() => setIsVisible(true), 10);
-
-        // Auto dismiss
-        if (duration > 0) {
-            const timer = setTimeout(() => {
-                handleClose();
-            }, duration);
-
-            return () => clearTimeout(timer);
-        }
-    }, [duration]);
-
-    const handleClose = () => {
-        setIsLeaving(true);
-        setTimeout(() => {
-            setIsVisible(false);
-            onClose(id);
-        }, 300);
-    };
-
-    const getToastConfig = () => {
-        switch (type) {
-            case "success":
-                return {
-                    bgColor: "bg-green-50",
-                    borderColor: "border-green-200",
-                    textColor: "text-green-800",
-                    icon: CheckCircle,
-                    iconColor: "text-green-500",
-                };
-            case "error":
-                return {
-                    bgColor: "bg-red-50",
-                    borderColor: "border-red-200",
-                    textColor: "text-red-800",
-                    icon: AlertCircle,
-                    iconColor: "text-red-500",
-                };
-            case "warning":
-                return {
-                    bgColor: "bg-yellow-50",
-                    borderColor: "border-yellow-200",
-                    textColor: "text-yellow-800",
-                    icon: AlertTriangle,
-                    iconColor: "text-yellow-500",
-                };
-            case "info":
-            default:
-                return {
-                    bgColor: "bg-blue-50",
-                    borderColor: "border-blue-200",
-                    textColor: "text-blue-800",
-                    icon: Info,
-                    iconColor: "text-blue-500",
-                };
-        }
-    };
-
-    const config = getToastConfig();
-    const IconComponent = config.icon;
-
-    const getPositionClasses = () => {
-        switch (position) {
-            case "top-left":
-                return "top-4 left-4";
-            case "top-center":
-                return "top-4 left-1/2 transform -translate-x-1/2";
-            case "top-right":
-            default:
-                return "top-4 right-4";
-            case "bottom-left":
-                return "bottom-4 left-4";
-            case "bottom-center":
-                return "bottom-4 left-1/2 transform -translate-x-1/2";
-            case "bottom-right":
-                return "bottom-4 right-4";
-        }
-    };
-
-    return (
-        <div
-            className={`
-                transition-all duration-300 ease-in-out
-                ${isVisible && !isLeaving ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-2 scale-95"}
-            `}
-            style={{
-                width: "100%",
-                marginBottom: "8px",
-            }}
-        >
-            <div
-                className={`
-                    ${config.bgColor} ${config.borderColor} ${config.textColor}
-                    border-l-4 rounded-lg shadow-lg p-4
-                    flex items-start gap-3
-                    hover:shadow-xl transition-shadow duration-200
-                    min-w-[300px] max-w-[400px]
-                `}
-            >
-                <IconComponent className={`w-5 h-5 ${config.iconColor} flex-shrink-0 mt-0.5`} />
-
-                <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium leading-5 break-words">{message}</p>
-                </div>
-
-                <button
-                    onClick={handleClose}
-                    className={`
-                        flex-shrink-0 ml-2 p-1 rounded-full
-                        hover:bg-gray-200 hover:bg-opacity-50
-                        transition-colors duration-150
-                        ${config.textColor} hover:${config.textColor}
-                    `}
-                >
-                    <X className="w-4 h-4" />
-                </button>
-            </div>
-        </div>
-    );
+const TOAST_TYPES = {
+    SUCCESS: {
+        icon: "✅",
+        backgroundColor: "#f0fdf4",
+        borderColor: "#22c55e",
+        color: "#14532d",
+    },
+    ERROR: {
+        icon: "❌",
+        backgroundColor: "#fef2f2",
+        borderColor: "#ef4444",
+        color: "#991b1b",
+    },
+    WARNING: {
+        icon: "⚠️",
+        backgroundColor: "#fffbeb",
+        borderColor: "#f59e0b",
+        color: "#92400e",
+    },
+    INFO: {
+        icon: "ℹ️",
+        backgroundColor: "#eff6ff",
+        borderColor: "#3b82f6",
+        color: "#1e40af",
+    },
 };
 
-export default Toast;
+// DOM-based toast system
+let toastId = 0;
+let toastContainer = null;
+
+// Create container if it doesn't exist
+const getToastContainer = () => {
+    if (!toastContainer) {
+        toastContainer = document.createElement("div");
+        toastContainer.id = "toast-container";
+        toastContainer.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 999999;
+            pointer-events: none;
+        `;
+        document.body.appendChild(toastContainer);
+    }
+    return toastContainer;
+};
+
+const createToastElement = (message, type) => {
+    const id = ++toastId;
+    const toastStyle = TOAST_TYPES[type];
+
+    const toastDiv = document.createElement("div");
+    toastDiv.id = `toast-${id}`;
+    toastDiv.style.cssText = `
+        display: flex;
+        align-items: center;
+        background-color: ${toastStyle.backgroundColor};
+        color: ${toastStyle.color};
+        border-left: 4px solid ${toastStyle.borderColor};
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 8px;
+        min-width: 300px;
+        max-width: 400px;
+        font-size: 14px;
+        font-weight: 500;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        pointer-events: auto;
+        opacity: 0;
+        transform: translateX(100%);
+        transition: all 0.3s ease;
+    `;
+
+    toastDiv.innerHTML = `
+        <span style="font-size: 18px; margin-right: 10px;">${toastStyle.icon}</span>
+        <span style="flex: 1; line-height: 1.4;">${message}</span>
+        <button onclick="this.parentElement.remove()" style="
+            margin-left: 12px;
+            font-size: 18px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: inherit;
+            font-weight: bold;
+            opacity: 0.7;
+        ">×</button>
+    `;
+
+    const container = getToastContainer();
+    container.appendChild(toastDiv);
+
+    // Trigger animation
+    setTimeout(() => {
+        toastDiv.style.opacity = "1";
+        toastDiv.style.transform = "translateX(0)";
+    }, 10);
+
+    // Auto remove
+    setTimeout(() => {
+        if (toastDiv.parentElement) {
+            toastDiv.style.opacity = "0";
+            toastDiv.style.transform = "translateX(100%)";
+            setTimeout(() => {
+                if (toastDiv.parentElement) {
+                    toastDiv.remove();
+                }
+            }, 300);
+        }
+    }, 4000);
+
+    return id;
+};
+
+// Toast Container Component - ensures container exists
+export const ToastContainer = () => {
+    useEffect(() => {
+        getToastContainer();
+
+        return () => {
+            // Cleanup on unmount
+            if (toastContainer && toastContainer.parentElement) {
+                toastContainer.remove();
+                toastContainer = null;
+            }
+        };
+    }, []);
+
+    return null;
+};
+
+// Export toast functions
+export const toast = {
+    success: (message) => createToastElement(message, "SUCCESS"),
+    error: (message) => createToastElement(message, "ERROR"),
+    warning: (message) => createToastElement(message, "WARNING"),
+    info: (message) => createToastElement(message, "INFO"),
+};
+
+export default ToastContainer;

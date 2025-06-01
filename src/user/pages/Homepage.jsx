@@ -4,7 +4,7 @@ import { Navigation, Autoplay } from "swiper/modules";
 import { useNavigate } from "react-router-dom";
 import axios from "axios"; // Import axios for API calls
 import aiRecommendationService from "../services/aiRecommendationService"; // Import AI service
-import useNotification from "../hooks/useNotification";
+import { toast } from "../components/Toast";
 
 const Homepage = () => {
     const [quantities, setQuantities] = useState({}); // Change to object to store quantities by food ID
@@ -17,7 +17,6 @@ const Homepage = () => {
     const [error, setError] = useState(null); // State to track any errors
     const [userId, setUserId] = useState(null); // State to store the user ID
     const [aiServiceAvailable, setAiServiceAvailable] = useState(false);
-    const notify = useNotification();
 
     useEffect(() => {
         const token = localStorage.getItem("jwtToken");
@@ -128,12 +127,12 @@ const Homepage = () => {
 
     const handleAddToCart = async (food) => {
         const quantity = quantities[food.id];
-        const token = localStorage.getItem("jwtToken");
+        const token = localStorage.getItem("jwtToken"); // Get JWT token from localStorage
 
-        if (!token || !userId) {
-            notify.warning("Vui lòng đăng nhập để thêm vào giỏ hàng.");
+        if (!token) {
+            toast.warning("Vui lòng đăng nhập để thêm vào giỏ hàng!");
             navigate("/login");
-            return;
+            return; // Stop if not logged in
         }
 
         if (quantity > 0 && userId) {
@@ -143,27 +142,33 @@ const Homepage = () => {
                     name: food.name,
                     price: food.price,
                     quantity: quantity,
-                    imageUrl: food.image,
+                    imageUrl: food.image, // Assuming 'image' field from backend corresponds to imageUrl
                 };
 
+                // Make the API call to add item to cart with Authorization header
                 const response = await axios.post(`http://localhost:8080/api/carts/${userId}/items`, itemToAdd, {
                     headers: {
-                        Authorization: `Bearer ${token}`,
+                        Authorization: `Bearer ${token}`, // Include the JWT token
                     },
                 });
                 console.log("Item added to cart:", response.data);
-                notify.success(`Đã thêm ${quantity} ${food.name} vào giỏ hàng!`);
+                toast.success(`Đã thêm ${quantity} ${food.name} vào giỏ hàng!`);
 
+                // Optionally reset the quantity counter after adding to cart
                 setQuantities((prev) => ({ ...prev, [food.id]: 0 }));
 
                 // Trigger custom event to update header cart count
                 window.dispatchEvent(new Event("cartUpdated"));
             } catch (err) {
                 console.error("Error adding item to cart:", err);
-                notify.error("Không thể thêm vào giỏ hàng. Vui lòng thử lại.");
+                toast.error("Có lỗi xảy ra khi thêm vào giỏ hàng!");
             }
         } else if (quantity === 0) {
-            notify.warning("Vui lòng chọn số lượng lớn hơn 0.");
+            toast.warning("Vui lòng chọn số lượng lớn hơn 0!");
+        } else if (!userId) {
+            // This case is now handled by the initial token check
+            toast.warning("Vui lòng đăng nhập để thêm vào giỏ hàng!");
+            navigate("/login");
         }
     };
 

@@ -1,0 +1,61 @@
+/* Hide default Swiper navigation arrows */
+:global(.banner-swiper .swiper-button-prev),
+:global(.banner-swiper .swiper-button-next),
+:global(.product-swiper .swiper-button-prev),
+:global(.product-swiper .swiper-button-next) {
+    display: none !important;
+}
+
+/* Custom navigation button hover effects */
+.swiper-button-prev-custom,
+.swiper-button-next-custom,
+:global(.product-swiper-prev),
+:global(.product-swiper-next) {
+    opacity: 0;
+    transform: translateY(-50%) scale(0.9);
+    transition: all 0.3s ease;
+}
+
+:global(.banner-swiper:hover) .swiper-button-prev-custom,
+:global(.banner-swiper:hover) .swiper-button-next-custom,
+:global(.product-swiper:hover) :global(.product-swiper-prev),
+:global(.product-swiper:hover) :global(.product-swiper-next) {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .swiper-button-prev-custom,
+    .swiper-button-next-custom,
+    :global(.product-swiper-prev),
+    :global(.product-swiper-next) {
+        width: 8px !important;
+        height: 8px !important;
+    }
+}
+
+/* Product swiper specific styles */
+:global(.product-swiper) {
+    padding: 0 40px !important;
+}
+
+:global(.product-swiper-prev) {
+    left: 4px !important;
+}
+
+:global(.product-swiper-next) {
+    right: 4px !important;
+}
+
+/* Card equal height */
+:global(.swiper-slide) {
+    height: auto !important;
+    display: flex !important;
+}
+
+:global(.product-card) {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+}
