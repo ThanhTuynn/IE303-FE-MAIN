@@ -11,7 +11,7 @@ import {
     FaMinus,
     FaPlus,
 } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios"; // Import axios
 import aiRecommendationService from "../services/aiRecommendationService"; // Import AI service
 import { toast } from "../components/Toast";
