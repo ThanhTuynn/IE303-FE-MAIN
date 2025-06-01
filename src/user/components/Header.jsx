@@ -1,17 +1,129 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Bell, User, ShoppingBag, Phone, Heart, Search } from "lucide-react";
+import axios from "axios";
 
 const Header = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [cartItemCount, setCartItemCount] = useState(0);
+    const [userId, setUserId] = useState(null);
 
-    // Check login status on component mount
-    React.useEffect(() => {
-        const token = localStorage.getItem('jwtToken');
-        setIsLoggedIn(!!token); // Update state based on token presence
+    // Check login status and get user info
+    useEffect(() => {
+        const checkLoginStatus = () => {
+            const token = localStorage.getItem("jwtToken");
+            const userData = localStorage.getItem("userData");
+
+            setIsLoggedIn(!!token);
+
+            if (userData && token) {
+                try {
+                    const user = JSON.parse(userData);
+                    setUserId(user.id || user._id);
+                } catch (e) {
+                    console.error("Failed to parse user data:", e);
+                    // Clear invalid data
+                    localStorage.removeItem("jwtToken");
+                    localStorage.removeItem("userData");
+                    setIsLoggedIn(false);
+                    setUserId(null);
+                }
+            } else {
+                setUserId(null);
+            }
+        };
+
+        // Initial check
+        checkLoginStatus();
+
+        // Listen for login/logout events
+        const handleAuthChange = () => {
+            checkLoginStatus();
+        };
+
+        // Listen for storage changes and custom events
+        window.addEventListener("storage", checkLoginStatus);
+        window.addEventListener("userLoggedIn", handleAuthChange);
+        window.addEventListener("userLoggedOut", handleAuthChange);
+
+        return () => {
+            window.removeEventListener("storage", checkLoginStatus);
+            window.removeEventListener("userLoggedIn", handleAuthChange);
+            window.removeEventListener("userLoggedOut", handleAuthChange);
+        };
     }, []);
+
+    // Fetch cart item count
+    useEffect(() => {
+        const fetchCartItemCount = async () => {
+            if (!isLoggedIn || !userId) {
+                setCartItemCount(0);
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem("jwtToken");
+                const response = await axios.get(`http://localhost:8080/api/carts/${userId}`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+
+                if (response.data && response.data.items) {
+                    // Calculate total quantity of all items
+                    const totalCount = response.data.items.reduce((total, item) => total + item.quantity, 0);
+                    setCartItemCount(totalCount);
+                } else {
+                    setCartItemCount(0);
+                }
+            } catch (error) {
+                console.error("Error fetching cart:", error);
+                setCartItemCount(0);
+            }
+        };
+
+        fetchCartItemCount();
+
+        // Set up interval to refresh cart count every 30 seconds
+        const interval = setInterval(fetchCartItemCount, 30000);
+
+        return () => clearInterval(interval);
+    }, [isLoggedIn, userId]);
+
+    // Listen for storage events to update cart count when items are added
+    useEffect(() => {
+        const handleStorageChange = () => {
+            if (isLoggedIn && userId) {
+                fetchCartItemCount();
+            }
+        };
+
+        const fetchCartItemCount = async () => {
+            try {
+                const token = localStorage.getItem("jwtToken");
+                const response = await axios.get(`http://localhost:8080/api/carts/${userId}`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+
+                if (response.data && response.data.items) {
+                    const totalCount = response.data.items.reduce((total, item) => total + item.quantity, 0);
+                    setCartItemCount(totalCount);
+                } else {
+                    setCartItemCount(0);
+                }
+            } catch (error) {
+                console.error("Error fetching cart:", error);
+                setCartItemCount(0);
+            }
+        };
+
+        // Listen for custom cart update events
+        window.addEventListener("cartUpdated", handleStorageChange);
+
+        return () => {
+            window.removeEventListener("cartUpdated", handleStorageChange);
+        };
+    }, [isLoggedIn, userId]);
 
     const isActive = (path) => location.pathname === path;
 
@@ -20,10 +132,22 @@ const Header = () => {
     };
 
     const handleLogout = () => {
-        localStorage.removeItem('jwtToken'); // Clear JWT token
-        localStorage.removeItem('userData'); // Clear user data
-        setIsLoggedIn(false); // Update state
-        navigate("/login"); // Redirect to login page
+        // Clear all user-related data from localStorage
+        localStorage.removeItem("jwtToken");
+        localStorage.removeItem("userData");
+
+        // Reset all states
+        setIsLoggedIn(false);
+        setUserId(null);
+        setCartItemCount(0);
+
+        // Dispatch custom event to notify other components
+        window.dispatchEvent(new Event("userLoggedOut"));
+
+        // Navigate to home page
+        navigate("/");
+
+        console.log("User logged out successfully");
     };
 
     return (
@@ -74,20 +198,12 @@ const Header = () => {
                     >
                         VỀ CHÚNG TÔI
                     </Link>
-
-                    <Link
-                        to="/test-payment"
-                        className={`text-2xl font-semibold hover:text-red-600 ${
-                            isActive("/test-payment") ? "text-red-600 border-b-2 border-red-600" : "text-black"
-                        }`}
-                    >
-                        PayOS Demo
-                    </Link>
                 </nav>
 
                 <div className="flex space-x-4">
                     {isLoggedIn ? (
-                        <> {/* User icons and Logout */}
+                        <>
+                            {/* User icons and Logout */}
                             <Link to="/favourite">
                                 <Heart
                                     className={`h-6 w-6 cursor-pointer transition-colors duration-200 ${
@@ -109,12 +225,18 @@ const Header = () => {
                                     }`}
                                 />
                             </Link>
-                            <Link to="/cart">
+                            <Link to="/cart" className="relative">
                                 <ShoppingBag
                                     className={`h-6 w-6 cursor-pointer transition-colors duration-200 ${
                                         isActive("/cart") ? "text-red-600" : "text-black"
                                     }`}
                                 />
+                                {/* Cart Item Count Badge */}
+                                {cartItemCount > 0 && (
+                                    <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center min-w-[20px] px-1">
+                                        {cartItemCount > 99 ? "99+" : cartItemCount}
+                                    </span>
+                                )}
                             </Link>
                             {/* Logout Button */}
                             <button

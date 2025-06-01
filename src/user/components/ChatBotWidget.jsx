@@ -7,6 +7,7 @@ import {
     startConversation as startChatConversation,
     sendMessage as sendChatMessage,
 } from "../services/chatService";
+import useNotification from "../hooks/useNotification";
 
 const ChatBotWidget = () => {
     const [open, setOpen] = useState(false);
@@ -19,6 +20,7 @@ const ChatBotWidget = () => {
     const [error, setError] = useState(null);
     const messagesEndRef = useRef(null);
     const navigate = useNavigate();
+    const notify = useNotification();
 
     const chatbotIcon = "https://res.cloudinary.com/dbr85jktp/image/upload/v1747658202/chatboticx_btdz3t.webp";
 
@@ -414,63 +416,214 @@ const ChatBotWidget = () => {
                                         >
                                             {message.food_suggestions ? (
                                                 <div className="grid grid-cols-1 gap-3">
-                                                    {message.food_suggestions.map((item, idx) => (
-                                                        <div
-                                                            key={(item["Tên món"] || item.name) + idx}
-                                                            className="border rounded-lg p-3 mb-2 shadow hover:bg-gray-50 cursor-pointer transition flex items-center gap-3"
-                                                            onClick={() =>
-                                                                navigate(
-                                                                    `/product/${encodeURIComponent(
-                                                                        item["Tên món"] || item.name
-                                                                    )}`
-                                                                )
+                                                    {message.food_suggestions.map((item, idx) => {
+                                                        // Prioritize MongoDB ObjectId (_id) over numeric id
+                                                        const foodId = item._id || item.food_id || item.id;
+                                                        console.log("🍔 Food suggestion item:", item);
+                                                        console.log("🆔 Extracted food ID (prioritizing _id):", foodId);
+
+                                                        const handleFoodClick = async () => {
+                                                            if (foodId && foodId !== "undefined" && foodId !== "null") {
+                                                                // We have a valid ID, navigate directly
+                                                                const navigateUrl = `/food/${foodId}`;
+                                                                console.log(
+                                                                    "🚀 Navigating with ObjectId to:",
+                                                                    navigateUrl
+                                                                );
+                                                                navigate(navigateUrl);
+                                                            } else {
+                                                                // No valid ID, try to find food by name
+                                                                console.log(
+                                                                    "⚠️ No valid ObjectId found, trying to find food by name:",
+                                                                    item["Tên món"] || item.name
+                                                                );
+                                                                try {
+                                                                    const response = await fetch(
+                                                                        "http://localhost:8080/api/foods"
+                                                                    );
+                                                                    const foods = await response.json();
+                                                                    const foodName = item["Tên món"] || item.name;
+                                                                    const foundFood = foods.find(
+                                                                        (food) =>
+                                                                            food.name.toLowerCase() ===
+                                                                            foodName.toLowerCase()
+                                                                    );
+
+                                                                    if (foundFood) {
+                                                                        console.log(
+                                                                            "✅ Found food by name:",
+                                                                            foundFood
+                                                                        );
+                                                                        // Use _id (ObjectId) for navigation
+                                                                        const objectId = foundFood._id || foundFood.id;
+                                                                        const navigateUrl = `/food/${objectId}`;
+                                                                        console.log(
+                                                                            "🚀 Navigating with found ObjectId to:",
+                                                                            navigateUrl
+                                                                        );
+                                                                        navigate(navigateUrl);
+                                                                    } else {
+                                                                        console.log(
+                                                                            "❌ Food not found by name:",
+                                                                            foodName
+                                                                        );
+                                                                        notify.error(
+                                                                            `Không tìm thấy thông tin chi tiết cho món "${foodName}"`
+                                                                        );
+                                                                    }
+                                                                } catch (error) {
+                                                                    console.error(
+                                                                        "❌ Error finding food by name:",
+                                                                        error
+                                                                    );
+                                                                    notify.error(
+                                                                        "Có lỗi khi tìm thông tin món ăn. Vui lòng thử lại."
+                                                                    );
+                                                                }
                                                             }
-                                                        >
-                                                            <img
-                                                                src={item.image}
-                                                                alt={item["Tên món"] || item.name}
-                                                                className="w-16 h-16 object-cover rounded-md border"
-                                                            />
-                                                            <div className="flex-1">
+                                                        };
+
+                                                        return (
+                                                            <div
+                                                                key={(item["Tên món"] || item.name) + idx}
+                                                                className="border rounded-lg p-3 mb-2 shadow hover:bg-gray-50 cursor-pointer transition flex items-center gap-3"
+                                                                onClick={handleFoodClick}
+                                                            >
+                                                                <img
+                                                                    src={item.image}
+                                                                    alt={item["Tên món"] || item.name}
+                                                                    className="w-16 h-16 object-cover rounded-md border"
+                                                                />
+                                                                <div className="flex-1">
+                                                                    <div className="font-bold text-base text-red-600">
+                                                                        {item["Tên món"] || item.name}
+                                                                    </div>
+                                                                    <div className="text-xs text-gray-500 mb-1">
+                                                                        Giá:{" "}
+                                                                        <span className="font-semibold">
+                                                                            {item["Giá"] || item.price} VNĐ
+                                                                        </span>
+                                                                    </div>
+                                                                    {foodId &&
+                                                                    foodId !== "undefined" &&
+                                                                    foodId !== "null" ? (
+                                                                        <div className="text-xs text-green-600">
+                                                                            ✅ ObjectId: {foodId}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="text-xs text-orange-500">
+                                                                            ⚠️ Sẽ tìm theo tên món
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ) : message.suggested_items ? (
+                                                <div className="grid grid-cols-1 gap-3">
+                                                    {message.suggested_items.map((item, idx) => {
+                                                        // Prioritize MongoDB ObjectId (_id) over numeric id
+                                                        const foodId = item._id || item.food_id || item.id;
+                                                        console.log("🍽️ Suggested item:", item);
+                                                        console.log("🆔 Extracted food ID (prioritizing _id):", foodId);
+
+                                                        const handleFoodClick = async () => {
+                                                            if (foodId && foodId !== "undefined" && foodId !== "null") {
+                                                                // We have a valid ID, navigate directly
+                                                                const navigateUrl = `/food/${foodId}`;
+                                                                console.log(
+                                                                    "🚀 Navigating with ObjectId to:",
+                                                                    navigateUrl
+                                                                );
+                                                                navigate(navigateUrl);
+                                                            } else {
+                                                                // No valid ID, try to find food by name
+                                                                console.log(
+                                                                    "⚠️ No valid ObjectId found, trying to find food by name:",
+                                                                    item.name
+                                                                );
+                                                                try {
+                                                                    const response = await fetch(
+                                                                        "http://localhost:8080/api/foods"
+                                                                    );
+                                                                    const foods = await response.json();
+                                                                    const foundFood = foods.find(
+                                                                        (food) =>
+                                                                            food.name.toLowerCase() ===
+                                                                            item.name.toLowerCase()
+                                                                    );
+
+                                                                    if (foundFood) {
+                                                                        console.log(
+                                                                            "✅ Found food by name:",
+                                                                            foundFood
+                                                                        );
+                                                                        // Use _id (ObjectId) for navigation
+                                                                        const objectId = foundFood._id || foundFood.id;
+                                                                        const navigateUrl = `/food/${objectId}`;
+                                                                        console.log(
+                                                                            "🚀 Navigating with found ObjectId to:",
+                                                                            navigateUrl
+                                                                        );
+                                                                        navigate(navigateUrl);
+                                                                    } else {
+                                                                        console.log(
+                                                                            "❌ Food not found by name:",
+                                                                            item.name
+                                                                        );
+                                                                        notify.error(
+                                                                            `Không tìm thấy thông tin chi tiết cho món "${item.name}"`
+                                                                        );
+                                                                    }
+                                                                } catch (error) {
+                                                                    console.error(
+                                                                        "❌ Error finding food by name:",
+                                                                        error
+                                                                    );
+                                                                    notify.error(
+                                                                        "Có lỗi khi tìm thông tin món ăn. Vui lòng thử lại."
+                                                                    );
+                                                                }
+                                                            }
+                                                        };
+
+                                                        return (
+                                                            <div
+                                                                key={item.name + idx}
+                                                                className="border rounded-lg p-3 mb-2 shadow hover:bg-gray-50 cursor-pointer transition"
+                                                                onClick={handleFoodClick}
+                                                            >
                                                                 <div className="font-bold text-base text-red-600">
-                                                                    {item["Tên món"] || item.name}
+                                                                    {item.name}
+                                                                </div>
+                                                                <div className="text-sm text-gray-700 mb-1">
+                                                                    {item.description}
                                                                 </div>
                                                                 <div className="text-xs text-gray-500 mb-1">
                                                                     Giá:{" "}
                                                                     <span className="font-semibold">
-                                                                        {item["Giá"] || item.price} VNĐ
+                                                                        {item.price} VNĐ
                                                                     </span>
                                                                 </div>
+                                                                <div className="text-xs text-gray-400">
+                                                                    Thành phần:{" "}
+                                                                    {item.ingredients && item.ingredients.join(", ")}
+                                                                </div>
+                                                                {foodId &&
+                                                                foodId !== "undefined" &&
+                                                                foodId !== "null" ? (
+                                                                    <div className="text-xs text-green-600">
+                                                                        ✅ ObjectId: {foodId}
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="text-xs text-orange-500">
+                                                                        ⚠️ Sẽ tìm theo tên món
+                                                                    </div>
+                                                                )}
                                                             </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            ) : message.suggested_items ? (
-                                                <div className="grid grid-cols-1 gap-3">
-                                                    {message.suggested_items.map((item, idx) => (
-                                                        <div
-                                                            key={item.name + idx}
-                                                            className="border rounded-lg p-3 mb-2 shadow hover:bg-gray-50 cursor-pointer transition"
-                                                            onClick={() =>
-                                                                navigate(`/product/${encodeURIComponent(item.name)}`)
-                                                            }
-                                                        >
-                                                            <div className="font-bold text-base text-red-600">
-                                                                {item.name}
-                                                            </div>
-                                                            <div className="text-sm text-gray-700 mb-1">
-                                                                {item.description}
-                                                            </div>
-                                                            <div className="text-xs text-gray-500 mb-1">
-                                                                Giá:{" "}
-                                                                <span className="font-semibold">{item.price} VNĐ</span>
-                                                            </div>
-                                                            <div className="text-xs text-gray-400">
-                                                                Thành phần:{" "}
-                                                                {item.ingredients && item.ingredients.join(", ")}
-                                                            </div>
-                                                        </div>
-                                                    ))}
+                                                        );
+                                                    })}
                                                 </div>
                                             ) : (
                                                 <div className="whitespace-pre-wrap">{message.content}</div>

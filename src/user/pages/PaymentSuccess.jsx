@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { CheckCircle, ArrowLeft, Receipt, ShoppingBag, User } from "lucide-react";
+import axios from "axios";
+import cartService from "../services/cartService";
 
 const PaymentSuccess = () => {
     const [searchParams] = useSearchParams();
@@ -8,26 +10,65 @@ const PaymentSuccess = () => {
     const location = useLocation();
     const [paymentInfo, setPaymentInfo] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [cartCleared, setCartCleared] = useState(false);
 
     const orderCode = searchParams.get("orderCode");
     const stateData = location.state;
 
+    // Function to clear cart after successful payment
+    const clearCart = async () => {
+        const result = await cartService.clearCart();
+
+        if (result.success) {
+            setCartCleared(true);
+            // Clear backup since payment was successful
+            cartService.clearBackup();
+            console.log(`🎉 Cart cleared successfully! Removed ${result.clearedCount} items`);
+        } else {
+            console.error("❌ Failed to clear cart:", result.message);
+        }
+    };
+
     useEffect(() => {
         const fetchPaymentInfo = async () => {
+            console.log("🏁 PaymentSuccess - useEffect started");
+            console.log("📋 Parameters:", { orderCode, stateData: !!stateData, cartCleared });
+
+            let paymentSuccessful = false;
+
             if (orderCode) {
                 try {
+                    console.log("🔍 Checking payment status for orderCode:", orderCode);
                     const response = await fetch(`http://localhost:8080/api/payments/status/${orderCode}`);
                     if (response.ok) {
                         const result = await response.json();
+                        console.log("📊 Backend payment status response:", result);
                         setPaymentInfo(result.data);
+
+                        // Check if payment is actually successful
+                        if (result.data && (result.data.status === "SUCCESS" || result.data.status === "PAID")) {
+                            console.log("✅ Payment confirmed successful from backend");
+                            paymentSuccessful = true;
+                        } else {
+                            console.log("❌ Payment not successful, status:", result.data?.status);
+                            // Redirect to cancelled page for failed payments
+                            if (result.data?.status === "FAILED" || result.data?.status === "CANCELLED") {
+                                console.log("🔄 Redirecting to payment cancelled page - CART WILL NOT BE CLEARED");
+                                navigate(`/payment-result?orderCode=${orderCode}&status=${result.data.status}`);
+                                return;
+                            }
+                        }
+                    } else {
+                        console.log("❌ Failed to fetch payment status, response not ok:", response.status);
                     }
                 } catch (error) {
-                    console.error("Error fetching payment info:", error);
+                    console.error("❌ Error fetching payment info:", error);
                 }
             }
 
-            // If we have state data from navigation, use it
+            // If we have state data from navigation (e.g., cash payment), use it
             if (stateData) {
+                console.log("📦 Using state data from navigation:", stateData);
                 setPaymentInfo({
                     orderCode: stateData.orderCode,
                     orderId: stateData.orderId || `ORDER_${stateData.orderCode}`,
@@ -36,13 +77,40 @@ const PaymentSuccess = () => {
                     items: stateData.items,
                     customerInfo: stateData.customerInfo,
                 });
+
+                // Cash payments or direct navigation to success page means payment was successful
+                paymentSuccessful = true;
+                console.log("💵 Cash payment or direct navigation - marking as successful");
+            }
+
+            // If no orderCode and no stateData, user probably navigated here incorrectly
+            if (!orderCode && !stateData) {
+                console.log("⚠️ No payment data found, redirecting to cart");
+                alert("Không tìm thấy thông tin thanh toán. Vui lòng thử lại.");
+                navigate("/cart");
+                return;
             }
 
             setLoading(false);
+            console.log("📈 Final payment status check:", { paymentSuccessful, cartCleared });
+
+            // 🚨 CRITICAL: Only clear cart if payment was actually successful
+            // AND we are not going to redirect to another page
+            if (paymentSuccessful && !cartCleared) {
+                console.log("🎉 Payment confirmed successful - WILL CLEAR CART");
+                // Add a small delay to ensure this page is stable before clearing cart
+                setTimeout(() => {
+                    clearCart();
+                }, 1000);
+            } else if (!paymentSuccessful) {
+                console.log("⚠️ Payment not successful - KEEPING CART ITEMS");
+            } else if (cartCleared) {
+                console.log("ℹ️ Cart already cleared, skipping");
+            }
         };
 
         fetchPaymentInfo();
-    }, [orderCode, stateData]);
+    }, [orderCode, stateData, cartCleared, navigate]);
 
     if (loading) {
         return (
@@ -61,6 +129,15 @@ const PaymentSuccess = () => {
                         <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
                         <h1 className="text-3xl font-bold text-gray-900 mb-2">Thanh toán thành công!</h1>
                         <p className="text-gray-600">Cảm ơn bạn đã sử dụng dịch vụ của UniFoodie</p>
+
+                        {/* Cart cleared notification */}
+                        {cartCleared && (
+                            <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-3">
+                                <p className="text-sm text-green-800">
+                                    ✅ Giỏ hàng đã được làm trống sau khi thanh toán thành công
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                     {/* Payment Info */}

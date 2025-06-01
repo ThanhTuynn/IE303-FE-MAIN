@@ -4,6 +4,8 @@ import AddressChangePopup from "../components/AddressChangePopup";
 import PaymentButton from "../components/PaymentButton";
 import EnhancedPaymentButton from "../components/EnhancedPaymentButton";
 import { useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
+import cartService from "../services/cartService";
 
 const Payment = () => {
     const [address, setAddress] = useState("Phương Uyên (+84) 82868383 Tầng 1, Tòa B, UIT");
@@ -228,8 +230,22 @@ const Payment = () => {
                                             ? "bg-green-600 hover:bg-green-700 text-white"
                                             : "bg-gray-400 text-gray-200 cursor-not-allowed"
                                     }`}
-                                    onSuccess={(result) => {
+                                    onSuccess={async (result) => {
                                         console.log("✅ Cash order success:", result);
+
+                                        // Clear cart after successful cash order
+                                        const clearResult = await cartService.clearCart();
+                                        if (clearResult.success) {
+                                            console.log(
+                                                `🎉 Cart cleared after cash payment! Removed ${clearResult.clearedCount} items`
+                                            );
+                                        } else {
+                                            console.error(
+                                                "❌ Failed to clear cart after cash payment:",
+                                                clearResult.message
+                                            );
+                                        }
+
                                         navigate("/payment-success", {
                                             state: {
                                                 orderId: result.order.id,

@@ -8,13 +8,17 @@ import {
     FaCoffee,
     FaSearch,
     FaHeart,
+    FaMinus,
+    FaPlus,
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import axios from "axios"; // Import axios
 import aiRecommendationService from "../services/aiRecommendationService"; // Import AI service
+import useNotification from "../hooks/useNotification";
 
 const Menu = () => {
     const navigate = useNavigate();
+    const notify = useNotification();
     const [foods, setFoods] = useState([]); // State to store fetched food data
     const [loading, setLoading] = useState(true); // State to track loading status
     const [error, setError] = useState(null); // State to track any errors
@@ -46,7 +50,7 @@ const Menu = () => {
             } catch (e) {
                 console.error("Failed to parse user data from localStorage:", e);
                 // Handle error, maybe clear local storage and ask to login again
-                alert("Error retrieving user data. Please log in again.");
+                notify.error("Lỗi dữ liệu người dùng. Vui lòng đăng nhập lại.");
                 navigate("/login"); // Redirect to login on data parse error
                 setLoading(false); // Stop loading on error
                 return; // Exit useEffect if user data is invalid
@@ -90,7 +94,7 @@ const Menu = () => {
                 setError(err);
                 setLoading(false);
                 console.error("Error fetching foods:", err);
-                alert("Failed to fetch food data."); // Alert user about the error
+                notify.error("Không thể tải dữ liệu món ăn. Vui lòng thử lại."); // Alert user about the error
             }
         };
 
@@ -100,7 +104,7 @@ const Menu = () => {
     const toggleFavourite = async (food) => {
         const token = localStorage.getItem("jwtToken");
         if (!token || !userId) {
-            alert("Please log in to mark items as favourites.");
+            notify.warning("Vui lòng đăng nhập để thêm món yêu thích.");
             navigate("/login");
             return;
         }
@@ -126,7 +130,7 @@ const Menu = () => {
                     newState.delete(food.id);
                     return newState;
                 });
-                alert("Đã xoá khỏi danh sách yêu thích!");
+                notify.success("Đã xoá khỏi danh sách yêu thích!");
             } else {
                 // Add to favorites
                 console.log("Attempting to add to favorites...");
@@ -141,11 +145,11 @@ const Menu = () => {
                     }
                 );
                 setFavoriteFoodIds((prev) => new Set(prev).add(food.id));
-                alert("Đã thêm vào danh sách yêu thích!");
+                notify.success("Đã thêm vào danh sách yêu thích!");
             }
         } catch (err) {
             console.error("Error toggling favorite status:", err);
-            alert("Failed to update favourite status.");
+            notify.error("Không thể cập nhật danh sách yêu thích.");
         }
     };
 
@@ -162,7 +166,7 @@ const Menu = () => {
         const token = localStorage.getItem("jwtToken");
 
         if (!token || !userId) {
-            alert("Please log in to add items to your cart.");
+            notify.warning("Vui lòng đăng nhập để thêm vào giỏ hàng.");
             navigate("/login");
             return;
         }
@@ -183,15 +187,18 @@ const Menu = () => {
                     },
                 });
                 console.log("Item added to cart:", response.data);
-                alert(`Đã thêm ${quantity} ${food.name} vào giỏ hàng!`);
+                notify.success(`Đã thêm ${quantity} ${food.name} vào giỏ hàng!`);
 
                 setQuantities((prev) => ({ ...prev, [food.id]: 0 }));
+
+                // Trigger custom event to update header cart count
+                window.dispatchEvent(new Event("cartUpdated"));
             } catch (err) {
                 console.error("Error adding item to cart:", err);
-                alert("Failed to add item to cart.");
+                notify.error("Không thể thêm vào giỏ hàng. Vui lòng thử lại.");
             }
         } else if (quantity === 0) {
-            alert("Please select a quantity greater than 0.");
+            notify.warning("Vui lòng chọn số lượng lớn hơn 0.");
         }
     };
 
@@ -334,95 +341,105 @@ const Menu = () => {
                                 </span>
                             </h2>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {/* Display Related Foods */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                 {aiRecommendations.map((food) => (
                                     <div
                                         key={`ai-${food.id}`}
-                                        className="border-2 border-purple-200 rounded-xl shadow-lg p-4 bg-gradient-to-br from-purple-50 to-pink-50 flex flex-col justify-between min-h-[400px] relative transform hover:scale-105 transition-transform duration-200"
+                                        className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
                                         onClick={() => navigate(`/food/${food._id || food.id}`)}
                                     >
                                         {/* AI Badge */}
-                                        <div className="absolute top-2 left-2 z-10">
-                                            <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
-                                                🤖 AI {food.aiScore && `${Math.round(food.aiScore * 100)}%`}
-                                            </span>
+                                        <div className="relative">
+                                            <div className="absolute top-3 left-3 z-10">
+                                                <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs px-3 py-1 rounded-full flex items-center gap-1 font-medium shadow-md">
+                                                    🤖 AI {food.aiScore && `${Math.round(food.aiScore * 100)}%`}
+                                                </span>
+                                            </div>
+
+                                            {/* Favourite Icon */}
+                                            {userId && (
+                                                <button
+                                                    className="absolute top-3 right-3 text-2xl focus:outline-none z-10"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        toggleFavourite(food);
+                                                    }}
+                                                >
+                                                    <FaHeart
+                                                        className={`text-2xl ${
+                                                            favoriteFoodIds.has(food.id)
+                                                                ? "text-red-600"
+                                                                : "text-white drop-shadow-lg hover:text-red-400"
+                                                        } transition-colors`}
+                                                    />
+                                                </button>
+                                            )}
+
+                                            <img
+                                                src={food.image}
+                                                alt={food.name}
+                                                className="w-full h-48 object-cover"
+                                            />
                                         </div>
 
-                                        {/* Favourite Icon */}
-                                        {userId && (
-                                            <button
-                                                className="absolute top-2 right-2 text-xl focus:outline-none"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    toggleFavourite(food);
-                                                }}
-                                            >
-                                                <FaHeart
-                                                    className={`text-2xl ${
-                                                        favoriteFoodIds.has(food.id)
-                                                            ? "text-red-600"
-                                                            : "text-gray-300 hover:text-red-400"
+                                        <div className="p-4">
+                                            <h3 className="font-bold text-lg text-gray-800 mb-2 line-clamp-1">
+                                                {food.name}
+                                            </h3>
+                                            <p className="text-red-600 font-bold text-xl mb-3">
+                                                {food.price.toLocaleString("vi-VN")}đ
+                                            </p>
+                                            <p className="text-gray-600 text-sm mb-3 line-clamp-2 leading-relaxed">
+                                                {food.description}
+                                            </p>
+
+                                            {/* AI Reason */}
+                                            <p className="text-xs text-purple-600 italic mb-4 bg-purple-50 rounded-lg p-3 border-l-4 border-purple-300">
+                                                💡 {food.aiReason}
+                                            </p>
+
+                                            {/* Action Row */}
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center border-2 border-gray-200 rounded-lg bg-white">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleChange(food.id, -1);
+                                                        }}
+                                                        className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-l-lg transition-colors"
+                                                        disabled={(quantities[food.id] || 0) <= 0}
+                                                    >
+                                                        <FaMinus size={12} />
+                                                    </button>
+                                                    <span className="w-12 h-8 flex items-center justify-center text-gray-800 font-semibold bg-gray-50">
+                                                        {quantities[food.id] || 0}
+                                                    </span>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleChange(food.id, 1);
+                                                        }}
+                                                        className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-r-lg transition-colors"
+                                                    >
+                                                        <FaPlus size={12} />
+                                                    </button>
+                                                </div>
+                                                <button
+                                                    disabled={(quantities[food.id] || 0) === 0 || !userId}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleAddToCart(food);
+                                                    }}
+                                                    className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                                                        (quantities[food.id] || 0) === 0 || !userId
+                                                            ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                                            : "bg-red-600 text-white hover:bg-red-700 shadow-md hover:shadow-lg"
                                                     }`}
-                                                />
-                                            </button>
-                                        )}
-
-                                        <img
-                                            src={food.image}
-                                            alt={food.name}
-                                            className="w-full h-48 object-cover rounded-md mb-3 mt-6"
-                                        />
-                                        <h3 className="font-semibold text-lg">{food.name}</h3>
-                                        <p className="text-red-600 font-bold mt-1">
-                                            {food.price.toLocaleString("vi-VN")}đ
-                                        </p>
-                                        <p className="text-sm text-gray-600 mb-2 line-clamp-3 overflow-hidden">
-                                            {food.description}
-                                        </p>
-
-                                        {/* AI Reason */}
-                                        <p className="text-xs text-purple-600 italic mb-3 bg-white/50 rounded p-2">
-                                            💡 {food.aiReason}
-                                        </p>
-
-                                        <div className="flex items-center justify-between mt-auto">
-                                            <div className="flex items-center border-2 border-purple-300 rounded px-2 py-1 bg-white">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleChange(food.id, -1);
-                                                    }}
-                                                    className="px-2 text-xl text-purple-600"
                                                 >
-                                                    −
-                                                </button>
-                                                <span className="px-3 font-semibold text-purple-800">
-                                                    {quantities[food.id] || 0}
-                                                </span>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleChange(food.id, 1);
-                                                    }}
-                                                    className="px-2 text-xl text-purple-600"
-                                                >
-                                                    +
+                                                    Thêm vào giỏ
                                                 </button>
                                             </div>
-                                            <button
-                                                disabled={(quantities[food.id] || 0) === 0 || !userId}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleAddToCart(food);
-                                                }}
-                                                className={`text-sm px-4 py-2 rounded-lg font-semibold transition duration-300 ${
-                                                    (quantities[food.id] || 0) === 0 || !userId
-                                                        ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                                                        : "bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 shadow-md"
-                                                }`}
-                                            >
-                                                Thêm vào giỏ
-                                            </button>
                                         </div>
                                     </div>
                                 ))}
@@ -460,79 +477,91 @@ const Menu = () => {
                                 </p>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                 {filteredFoods.map((food) => (
                                     <div
                                         key={food.id}
-                                        className="border rounded-xl shadow p-4 bg-white flex flex-col justify-between min-h-[400px] relative cursor-pointer hover:shadow-lg transition-shadow"
+                                        className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
                                         onClick={() => navigate(`/food/${food._id || food.id}`)}
                                     >
-                                        {/* Favourite Icon */}
-                                        {userId && (
-                                            <button
-                                                className="absolute top-3 right-3 text-xl focus:outline-none z-10"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    toggleFavourite(food);
-                                                }}
-                                            >
-                                                <FaHeart
-                                                    className={`text-2xl ${
-                                                        favoriteFoodIds.has(food.id)
-                                                            ? "text-red-600"
-                                                            : "text-gray-300 hover:text-red-400"
-                                                    }`}
-                                                />
-                                            </button>
-                                        )}
-                                        <img
-                                            src={food.image}
-                                            alt={food.name}
-                                            className="w-full h-48 object-cover rounded-md mb-3"
-                                        />
-                                        <h3 className="font-semibold text-lg">{food.name}</h3>
-                                        <p className="text-red-600 font-bold mt-1">
-                                            {food.price.toLocaleString("vi-VN")}đ
-                                        </p>
-                                        <p className="text-sm text-gray-600 mb-3 line-clamp-4 overflow-hidden">
-                                            {food.description}
-                                        </p>
-                                        <div className="flex items-center justify-between mt-3">
-                                            <div className="flex items-center border rounded px-2 py-1">
+                                        <div className="relative">
+                                            {/* Favourite Icon */}
+                                            {userId && (
                                                 <button
+                                                    className="absolute top-3 right-3 text-2xl focus:outline-none z-10"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        handleChange(food.id, -1);
+                                                        toggleFavourite(food);
                                                     }}
-                                                    className="px-2 text-xl"
                                                 >
-                                                    −
+                                                    <FaHeart
+                                                        className={`text-2xl ${
+                                                            favoriteFoodIds.has(food.id)
+                                                                ? "text-red-600"
+                                                                : "text-white drop-shadow-lg hover:text-red-400"
+                                                        } transition-colors`}
+                                                    />
                                                 </button>
-                                                <span className="px-3">{quantities[food.id] || 0}</span>
+                                            )}
+                                            <img
+                                                src={food.image}
+                                                alt={food.name}
+                                                className="w-full h-48 object-cover"
+                                            />
+                                        </div>
+
+                                        <div className="p-4">
+                                            <h3 className="font-bold text-lg text-gray-800 mb-2 line-clamp-1">
+                                                {food.name}
+                                            </h3>
+                                            <p className="text-red-600 font-bold text-xl mb-3">
+                                                {food.price.toLocaleString("vi-VN")}đ
+                                            </p>
+                                            <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">
+                                                {food.description}
+                                            </p>
+
+                                            {/* Action Row */}
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center border-2 border-gray-200 rounded-lg bg-white">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleChange(food.id, -1);
+                                                        }}
+                                                        className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-l-lg transition-colors"
+                                                        disabled={(quantities[food.id] || 0) <= 0}
+                                                    >
+                                                        <FaMinus size={12} />
+                                                    </button>
+                                                    <span className="w-12 h-8 flex items-center justify-center text-gray-800 font-semibold bg-gray-50">
+                                                        {quantities[food.id] || 0}
+                                                    </span>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleChange(food.id, 1);
+                                                        }}
+                                                        className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-r-lg transition-colors"
+                                                    >
+                                                        <FaPlus size={12} />
+                                                    </button>
+                                                </div>
                                                 <button
+                                                    disabled={(quantities[food.id] || 0) === 0 || !userId}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        handleChange(food.id, 1);
+                                                        handleAddToCart(food);
                                                     }}
-                                                    className="px-2 text-xl"
+                                                    className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                                                        (quantities[food.id] || 0) === 0 || !userId
+                                                            ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                                            : "bg-red-600 text-white hover:bg-red-700 shadow-md hover:shadow-lg"
+                                                    }`}
                                                 >
-                                                    +
+                                                    Thêm vào giỏ
                                                 </button>
                                             </div>
-                                            <button
-                                                disabled={(quantities[food.id] || 0) === 0 || !userId}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleAddToCart(food);
-                                                }}
-                                                className={`text-sm px-4 py-1 rounded transition duration-300 ${
-                                                    (quantities[food.id] || 0) === 0 || !userId
-                                                        ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                                                        : "bg-red-600 text-white hover:bg-red-700"
-                                                }`}
-                                            >
-                                                Thêm vào giỏ
-                                            </button>
                                         </div>
                                     </div>
                                 ))}
@@ -551,87 +580,98 @@ const Menu = () => {
                                 {getCategoryIcon(category)} {/* Get icon based on category name */}
                                 <span className="text-red-600">{category}</span>
                             </h2>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                                 {items.map(
                                     (
                                         food // Use items within category
                                     ) => (
                                         <div
                                             key={food.id} // Use food.id as key
-                                            className="border rounded-xl shadow p-4 bg-white flex flex-col justify-between min-h-[400px] relative cursor-pointer hover:shadow-lg transition-shadow" // Added relative positioning
+                                            className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1" // Added relative positioning
                                             onClick={() => navigate(`/food/${food._id || food.id}`)}
                                         >
-                                            {/* Favourite Icon */}
-                                            {userId && ( // Only show if user is logged in
-                                                <button
-                                                    className="absolute top-3 right-3 text-xl focus:outline-none z-10"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        toggleFavourite(food);
-                                                    }}
-                                                >
-                                                    <FaHeart
-                                                        className={`text-2xl ${
-                                                            favoriteFoodIds.has(food.id)
-                                                                ? "text-red-600"
-                                                                : "text-gray-300 hover:text-red-400"
+                                            <div className="relative">
+                                                {/* Favourite Icon */}
+                                                {userId && ( // Only show if user is logged in
+                                                    <button
+                                                        className="absolute top-3 right-3 text-2xl focus:outline-none z-10"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            toggleFavourite(food);
+                                                        }}
+                                                    >
+                                                        <FaHeart
+                                                            className={`text-2xl ${
+                                                                favoriteFoodIds.has(food.id)
+                                                                    ? "text-red-600"
+                                                                    : "text-white drop-shadow-lg hover:text-red-400"
+                                                            } transition-colors`}
+                                                        />
+                                                    </button>
+                                                )}
+                                                <img
+                                                    src={food.image}
+                                                    alt={food.name}
+                                                    className="w-full h-48 object-cover"
+                                                />
+                                            </div>
+
+                                            <div className="p-4">
+                                                <h3 className="font-bold text-lg text-gray-800 mb-2 line-clamp-1">
+                                                    {food.name}
+                                                </h3>
+                                                <p className="text-red-600 font-bold text-xl mb-3">
+                                                    {food.price.toLocaleString("vi-VN")}đ
+                                                </p>{" "}
+                                                {/* Format price */}
+                                                <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">
+                                                    {food.description}
+                                                </p>{" "}
+                                                {/* Use food.description */}
+                                                {/* Action Row */}
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center border-2 border-gray-200 rounded-lg bg-white">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleChange(food.id, -1);
+                                                            }}
+                                                            className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-l-lg transition-colors"
+                                                            disabled={(quantities[food.id] || 0) <= 0}
+                                                        >
+                                                            <FaMinus size={12} />
+                                                        </button>{" "}
+                                                        {/* Use food.id */}
+                                                        <span className="w-12 h-8 flex items-center justify-center text-gray-800 font-semibold bg-gray-50">
+                                                            {quantities[food.id] || 0}
+                                                        </span>{" "}
+                                                        {/* Use quantities object */}
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleChange(food.id, 1);
+                                                            }}
+                                                            className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-r-lg transition-colors"
+                                                        >
+                                                            <FaPlus size={12} />
+                                                        </button>{" "}
+                                                        {/* Use food.id */}
+                                                    </div>
+                                                    <button
+                                                        disabled={(quantities[food.id] || 0) === 0 || !userId} // Disable if quantity is 0 or not logged in
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleAddToCart(food);
+                                                        }} // Pass the food object
+                                                        className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                                                            (quantities[food.id] || 0) === 0 || !userId
+                                                                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                                                : "bg-red-600 text-white hover:bg-red-700 shadow-md hover:shadow-lg"
                                                         }`}
-                                                    />
-                                                </button>
-                                            )}
-                                            <img
-                                                src={food.image}
-                                                alt={food.name}
-                                                className="w-full h-48 object-cover rounded-md mb-3"
-                                            />
-                                            <h3 className="font-semibold text-lg">{food.name}</h3>
-                                            <p className="text-red-600 font-bold mt-1">
-                                                {food.price.toLocaleString("vi-VN")}đ
-                                            </p>{" "}
-                                            {/* Format price */}
-                                            <p className="text-sm text-gray-600 mb-3 line-clamp-4 overflow-hidden">
-                                                {food.description}
-                                            </p>{" "}
-                                            {/* Use food.description */}
-                                            <div className="flex items-center justify-between mt-3">
-                                                <div className="flex items-center border rounded px-2 py-1">
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleChange(food.id, -1);
-                                                        }}
-                                                        className="px-2 text-xl"
                                                     >
-                                                        −
-                                                    </button>{" "}
-                                                    {/* Use food.id */}
-                                                    <span className="px-3">{quantities[food.id] || 0}</span>{" "}
-                                                    {/* Use quantities object */}
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleChange(food.id, 1);
-                                                        }}
-                                                        className="px-2 text-xl"
-                                                    >
-                                                        +
-                                                    </button>{" "}
-                                                    {/* Use food.id */}
+                                                        Thêm vào giỏ
+                                                    </button>
                                                 </div>
-                                                <button
-                                                    disabled={(quantities[food.id] || 0) === 0 || !userId} // Disable if quantity is 0 or not logged in
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleAddToCart(food);
-                                                    }} // Pass the food object
-                                                    className={`text-sm px-4 py-1 rounded transition duration-300 ${
-                                                        (quantities[food.id] || 0) === 0 || !userId
-                                                            ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                                                            : "bg-red-600 text-white hover:bg-red-700"
-                                                    }`}
-                                                >
-                                                    Thêm vào giỏ
-                                                </button>
                                             </div>
                                         </div>
                                     )

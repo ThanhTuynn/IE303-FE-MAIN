@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { CreditCard, Loader2, CheckCircle } from "lucide-react";
 import { orderService } from "../services/orderService";
 import { paymentService } from "../services/paymentService";
+import cartService from "../services/cartService";
 
 const EnhancedPaymentButton = ({
     userId,
@@ -120,6 +121,14 @@ const EnhancedPaymentButton = ({
                 } else {
                     // For PayOS/QR payments, redirect to payment gateway
                     // Don't call onSuccess here - it will be handled by return URL
+
+                    // 🚨 BACKUP CART before redirecting to payment gateway
+                    console.log("💾 Backing up cart before payment gateway redirect...");
+                    const backupResult = await cartService.backupCart();
+                    if (backupResult.success) {
+                        console.log(`✅ Cart backed up: ${backupResult.itemCount} items`);
+                    }
+
                     if (
                         paymentResult.paymentUrl.includes("payos.vn") ||
                         paymentResult.paymentType === "payos-checkout"

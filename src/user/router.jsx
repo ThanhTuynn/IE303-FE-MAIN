@@ -18,9 +18,8 @@ import Signup from "./pages/Signup";
 import Login from "./pages/Login";
 import Payment from "./pages/Payment";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentCancelled from "./pages/PaymentCancelled";
 import PaymentResult from "./pages/PaymentResult";
-import TestPayment from "./pages/TestPayment";
-import DemoPayment from "./pages/DemoPayment";
 import ChangeProfile from "./pages/ChangeProfile";
 import NotFound from "./pages/NotFound";
 import ScrollToTop from "./components/ScrollToTop";
@@ -50,9 +49,8 @@ const App = () => {
                     <Route path="login" element={<Login />} />
                     <Route path="payment" element={<Payment />} />
                     <Route path="payment-success" element={<PaymentSuccess />} />
+                    <Route path="payment-cancelled" element={<PaymentCancelled />} />
                     <Route path="payment-result" element={<PaymentResult />} />
-                    <Route path="test-payment" element={<TestPayment />} />
-                    <Route path="demo-payment" element={<DemoPayment />} />
                     <Route path="change-profile" element={<ChangeProfile />} />
                     <Route path="change-password" element={<ChangePassword />} />
                     <Route path="favourite" element={<Favourite />} />
