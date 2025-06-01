@@ -7,7 +7,6 @@ import {
     startConversation as startChatConversation,
     sendMessage as sendChatMessage,
 } from "../services/chatService";
-import useNotification from "../hooks/useNotification";
 
 const ChatBotWidget = () => {
     const [open, setOpen] = useState(false);
@@ -20,7 +19,6 @@ const ChatBotWidget = () => {
     const [error, setError] = useState(null);
     const messagesEndRef = useRef(null);
     const navigate = useNavigate();
-    const notify = useNotification();
 
     const chatbotIcon = "https://res.cloudinary.com/dbr85jktp/image/upload/v1747658202/chatboticx_btdz3t.webp";
 
@@ -467,7 +465,7 @@ const ChatBotWidget = () => {
                                                                             "❌ Food not found by name:",
                                                                             foodName
                                                                         );
-                                                                        notify.error(
+                                                                        alert(
                                                                             `Không tìm thấy thông tin chi tiết cho món "${foodName}"`
                                                                         );
                                                                     }
@@ -476,7 +474,7 @@ const ChatBotWidget = () => {
                                                                         "❌ Error finding food by name:",
                                                                         error
                                                                     );
-                                                                    notify.error(
+                                                                    alert(
                                                                         "Có lỗi khi tìm thông tin món ăn. Vui lòng thử lại."
                                                                     );
                                                                 }
@@ -572,7 +570,7 @@ const ChatBotWidget = () => {
                                                                             "❌ Food not found by name:",
                                                                             item.name
                                                                         );
-                                                                        notify.error(
+                                                                        alert(
                                                                             `Không tìm thấy thông tin chi tiết cho món "${item.name}"`
                                                                         );
                                                                     }
@@ -581,7 +579,7 @@ const ChatBotWidget = () => {
                                                                         "❌ Error finding food by name:",
                                                                         error
                                                                     );
-                                                                    notify.error(
+                                                                    alert(
                                                                         "Có lỗi khi tìm thông tin món ăn. Vui lòng thử lại."
                                                                     );
                                                                 }

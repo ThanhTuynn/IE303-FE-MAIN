@@ -1,11 +1,7 @@
 import React, { useState } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-import { useNavigate, Link } from "react-router-dom";
-import useNotification from "../hooks/useNotification";
 
 const Signup = () => {
-    const navigate = useNavigate();
-    const notify = useNotification();
     // State quản lý dữ liệu form
     const [formData, setFormData] = useState({
         fullName: "",
@@ -14,8 +10,6 @@ const Signup = () => {
         phoneNumber: "",
         password: "",
         confirmPassword: "",
-        address: "",
-        phone: "",
     });
 
     const [showPassword, setShowPassword] = useState(false);
@@ -45,12 +39,6 @@ const Signup = () => {
             case "Xác nhận mật khẩu":
                 fieldName = "confirmPassword";
                 break;
-            case "Địa chỉ":
-                fieldName = "address";
-                break;
-            case "Số điện thoại":
-                fieldName = "phone";
-                break;
             default:
                 return; // Bỏ qua các input không khớp
         }
@@ -67,7 +55,7 @@ const Signup = () => {
 
         // Kiểm tra mật khẩu khớp
         if (formData.password !== formData.confirmPassword) {
-            notify.error("Mật khẩu và xác nhận mật khẩu không khớp!");
+            alert("Mật khẩu và xác nhận mật khẩu không khớp!");
             return;
         }
 
@@ -88,17 +76,17 @@ const Signup = () => {
 
             if (response.ok && result.success) {
                 // Kiểm tra status 200 và success: true
-                notify.success("Đăng ký thành công! Vui lòng đăng nhập.");
+                alert("Đăng ký thành công! Vui lòng đăng nhập.");
                 // Chuyển hướng đến trang đăng nhập
                 // Lưu ý: Bạn cần cấu hình React Router hoặc tương tự để chuyển hướng
-                navigate("/login"); // Ví dụ chuyển hướng đơn giản
+                window.location.href = "/login"; // Ví dụ chuyển hướng đơn giản
             } else {
                 // Xử lý lỗi từ backend
-                notify.error("Đăng ký thất bại: " + (result.message || "Có lỗi xảy ra."));
+                alert("Đăng ký thất bại: " + (result.message || "Có lỗi xảy ra."));
             }
         } catch (error) {
             console.error("Error during registration:", error);
-            notify.error("Đã xảy ra lỗi kết nối đến server. Vui lòng thử lại.");
+            alert("Đã xảy ra lỗi kết nối đến server. Vui lòng thử lại.");
         }
     };
 

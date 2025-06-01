@@ -11,10 +11,9 @@ import {
     FaMinus,
     FaPlus,
 } from "react-icons/fa";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import axios from "axios"; // Import axios
 import aiRecommendationService from "../services/aiRecommendationService"; // Import AI service
-import useNotification from "../hooks/useNotification";
 
 const Menu = () => {
     const navigate = useNavigate();
@@ -25,7 +24,6 @@ const Menu = () => {
     const [search, setSearch] = useState("");
     const [userId, setUserId] = useState(null); // State to store the user ID
     const [favoriteFoodIds, setFavoriteFoodIds] = useState(new Set()); // State to store favorite food IDs
-    const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || null);
 
     // AI Search States
     const [aiRecommendations, setAiRecommendations] = useState([]);
@@ -50,7 +48,7 @@ const Menu = () => {
             } catch (e) {
                 console.error("Failed to parse user data from localStorage:", e);
                 // Handle error, maybe clear local storage and ask to login again
-                notify.error("Lỗi dữ liệu người dùng. Vui lòng đăng nhập lại.");
+                alert("Error retrieving user data. Please log in again.");
                 navigate("/login"); // Redirect to login on data parse error
                 setLoading(false); // Stop loading on error
                 return; // Exit useEffect if user data is invalid
@@ -94,24 +92,17 @@ const Menu = () => {
                 setError(err);
                 setLoading(false);
                 console.error("Error fetching foods:", err);
-                notify.error("Không thể tải dữ liệu món ăn. Vui lòng thử lại."); // Alert user about the error
+                alert("Failed to fetch food data."); // Alert user about the error
             }
         };
 
         fetchFoods();
     }, [userId, navigate]); // Rerun effect if userId or navigate changes
 
-    useEffect(() => {
-        const category = searchParams.get('category');
-        if (category) {
-            setSelectedCategory(category);
-        }
-    }, [searchParams]);
-
     const toggleFavourite = async (food) => {
         const token = localStorage.getItem("jwtToken");
         if (!token || !userId) {
-            notify.warning("Vui lòng đăng nhập để thêm món yêu thích.");
+            alert("Please log in to mark items as favourites.");
             navigate("/login");
             return;
         }
@@ -137,7 +128,7 @@ const Menu = () => {
                     newState.delete(food.id);
                     return newState;
                 });
-                notify.success("Đã xoá khỏi danh sách yêu thích!");
+                alert("Đã xoá khỏi danh sách yêu thích!");
             } else {
                 // Add to favorites
                 console.log("Attempting to add to favorites...");
@@ -152,11 +143,11 @@ const Menu = () => {
                     }
                 );
                 setFavoriteFoodIds((prev) => new Set(prev).add(food.id));
-                notify.success("Đã thêm vào danh sách yêu thích!");
+                alert("Đã thêm vào danh sách yêu thích!");
             }
         } catch (err) {
             console.error("Error toggling favorite status:", err);
-            notify.error("Không thể cập nhật danh sách yêu thích.");
+            alert("Failed to update favourite status.");
         }
     };
 
@@ -173,7 +164,7 @@ const Menu = () => {
         const token = localStorage.getItem("jwtToken");
 
         if (!token || !userId) {
-            notify.warning("Vui lòng đăng nhập để thêm vào giỏ hàng.");
+            alert("Please log in to add items to your cart.");
             navigate("/login");
             return;
         }
@@ -194,7 +185,7 @@ const Menu = () => {
                     },
                 });
                 console.log("Item added to cart:", response.data);
-                notify.success(`Đã thêm ${quantity} ${food.name} vào giỏ hàng!`);
+                alert(`Đã thêm ${quantity} ${food.name} vào giỏ hàng!`);
 
                 setQuantities((prev) => ({ ...prev, [food.id]: 0 }));
 
@@ -202,22 +193,14 @@ const Menu = () => {
                 window.dispatchEvent(new Event("cartUpdated"));
             } catch (err) {
                 console.error("Error adding item to cart:", err);
-                notify.error("Không thể thêm vào giỏ hàng. Vui lòng thử lại.");
+                alert("Failed to add item to cart.");
             }
         } else if (quantity === 0) {
-            notify.warning("Vui lòng chọn số lượng lớn hơn 0.");
+            alert("Please select a quantity greater than 0.");
         }
     };
 
-    // Filter foods based on selected category and search
-    const filteredFoods = foods.filter((food) => {
-        const categoryMatch = selectedCategory ? food.category === selectedCategory : true;
-        const searchMatch = search
-            ? food.name.toLowerCase().includes(search.toLowerCase()) ||
-              food.description.toLowerCase().includes(search.toLowerCase())
-            : true;
-        return categoryMatch && searchMatch;
-    });
+    const filteredFoods = foods.filter((food) => food.name.toLowerCase().includes(search.toLowerCase()));
 
     // AI Search Handler
     const handleAiSearch = async (query) => {
