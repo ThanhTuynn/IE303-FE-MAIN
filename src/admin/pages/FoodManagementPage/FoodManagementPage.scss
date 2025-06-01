@@ -255,3 +255,69 @@
     }
   }
 }
+
+// Add styles for the delete modal
+.delete-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); // Semi-transparent dark background
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; // Ensure it's above other content
+
+    .modal-content {
+        background-color: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        max-width: 400px; // Adjust max-width as needed
+        width: 90%; // Make it responsive
+        text-align: center; // Center text inside modal
+
+        h3 {
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        p {
+            margin-bottom: 20px;
+            font-size: 16px;
+            color: #555;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: center; // Center buttons
+            gap: 15px; // Space between buttons
+
+            button {
+                padding: 10px 20px;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 15px;
+                transition: background-color 0.3s ease;
+
+                &:first-child { // Cancel button
+                    background-color: #ccc;
+                    color: #333;
+                    &:hover {
+                        background-color: #bbb;
+                    }
+                }
+
+                // Delete button style is already inline in JSX, but define hover here for consistency
+                 &:last-child { // Delete button
+                     // background-color is inline
+                      &:hover {
+                         background-color: #c62828; // Darker red on hover
+                      }
+                 }
+            }
+        }
+    }
+}

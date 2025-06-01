@@ -24,6 +24,8 @@ const FoodManagement = () => {
     const [foods, setFoods] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+    const [foodToDelete, setFoodToDelete] = useState(null);
 
     // Fetch dữ liệu món ăn khi component mount
     useEffect(() => {
@@ -262,6 +264,57 @@ const FoodManagement = () => {
         setEditMenuItem(null);
     };
 
+    // Handle delete button click
+    const handleDeleteButtonClick = (item) => {
+        console.log("Delete button clicked for item:", item);
+        console.log("Deleting with _id:", item._id);
+        setFoodToDelete(item);
+        setIsDeleteModalVisible(true);
+    };
+
+    // Handle cancel delete
+    const handleCancelDelete = () => {
+        setIsDeleteModalVisible(false);
+        setFoodToDelete(null);
+    };
+
+    // Handle confirm delete
+    const handleConfirmDelete = async () => {
+         if (!foodToDelete || !foodToDelete._id) { // Check for _id instead of id
+             console.error("foodToDelete or foodToDelete._id is null/undefined", foodToDelete);
+             alert("Error: Could not get item ID for deletion.");
+             handleCancelDelete(); // Close modal
+             return; // Exit if no item or _id is found
+         }
+
+         const token = localStorage.getItem("jwtToken");
+         if (!token) {
+             alert("No authentication token found. Please log in.");
+             handleCancelDelete(); // Close modal
+             return;
+         }
+
+         try {
+             console.log("Attempting to delete food item with _id:", foodToDelete._id);
+             // Use foodToDelete._id for the DELETE request
+             await axios.delete(`http://localhost:8080/api/foods/${foodToDelete._id}`, {
+                 headers: {
+                     Authorization: `Bearer ${token}`,
+                 },
+             });
+
+             // Update the foods state by removing the deleted item using its _id
+             setFoods(foods.filter(food => food._id !== foodToDelete._id));
+
+             alert("Món ăn đã được xóa thành công!");
+             handleCancelDelete(); // Close modal on success
+         } catch (err) {
+             console.error("Error deleting food item:", err.response ? err.response.data : err.message);
+             alert(`Failed to delete food item: ${err.response?.data?.message || err.message}`);
+             handleCancelDelete(); // Close modal on error
+         }
+    };
+
     if (loading) {
         return (
             <div className="food-container">
@@ -334,6 +387,9 @@ const FoodManagement = () => {
                                 </div>
                                 <button className="edit-button" onClick={() => handleEditButtonClick(item)}>
                                     <EditOutlined /> Sửa món ăn
+                                </button>
+                                <button className="delete-button" onClick={() => handleDeleteButtonClick(item)}>
+                                    <DeleteOutlined /> Xóa món ăn
                                 </button>
                             </div>
                         ))}
@@ -428,6 +484,20 @@ const FoodManagement = () => {
                             <div className="modal-actions">
                                 <button onClick={handleCancelAdd}>Hủy</button>
                                 <button onClick={handleSaveNewItem}>Lưu</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Delete Confirmation Modal */}
+                {isDeleteModalVisible && foodToDelete && (
+                    <div className="delete-modal">
+                        <div className="modal-content">
+                            <h3 style={{ color: "#b71c1c", fontSize: "24px" }}>Xác nhận xóa</h3>
+                            <p>Bạn có chắc chắn muốn xóa món ăn <strong>{foodToDelete.name}</strong> không?</p>
+                            <div className="modal-actions">
+                                <button onClick={handleCancelDelete}>Hủy</button>
+                                <button onClick={handleConfirmDelete} style={{ backgroundColor: "#e53935", color: "white" }}>Xóa</button>
                             </div>
                         </div>
                     </div>
