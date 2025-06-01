@@ -31,6 +31,12 @@ const Promotions = () => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [promotionFoods, setPromotionFoods] = useState([]);
 
+    // AI Search States
+    const [aiRecommendations, setAiRecommendations] = useState([]);
+    const [aiSearchLoading, setAiSearchLoading] = useState(false);
+    const [showAiRecommendations, setShowAiRecommendations] = useState(false);
+    const [lastSearchQuery, setLastSearchQuery] = useState("");
+
     useEffect(() => {
         const token = localStorage.getItem("jwtToken");
         setIsLoggedIn(!!token);
@@ -71,130 +77,168 @@ const Promotions = () => {
     };
 
     useEffect(() => {
+        console.log("Promotions main useEffect running...");
         const token = localStorage.getItem("jwtToken");
-        const userData = localStorage.getItem("userData");
+        const userDataString = localStorage.getItem("userData");
 
-        if (!token || !userData) {
+        console.log("JWT Token from localStorage:", token ? "Found" : "Not found");
+        console.log("User Data String from localStorage:", userDataString ? "Found" : "Not found");
+
+        if (!token || !userDataString) {
+            console.log("User not logged in or user data missing. Redirecting to login.");
             toast.warning("Vui lòng đăng nhập để xem khuyến mãi và thêm vào giỏ hàng.");
             navigate("/login");
+            setLoading(false); // Stop loading if not logged in
             return;
         }
 
-        if (userData) {
-            try {
-                const user = JSON.parse(userData);
-                setUserId(user.id); // Assuming user ID is stored as 'id'
-            } catch (e) {
-                console.error("Failed to parse user data from localStorage:", e);
-                toast.error("Lỗi xử lý dữ liệu người dùng. Vui lòng đăng nhập lại.");
+        let currentUserId = null;
+        try {
+            const userData = JSON.parse(userDataString);
+            console.log("Parsed User Data:", userData);
+            if (userData && (userData.id || userData._id)) {
+                currentUserId = userData.id || userData._id; // Use either id or _id
+                setUserId(currentUserId); // Set state
+                console.log("User ID parsed and set:", currentUserId);
+            } else {
+                console.error("User data parsed but 'id' or '_id' field is missing or userData is null.", userData);
+                toast.error("Lỗi xử lý dữ liệu người dùng. ID không tìm thấy. Vui lòng đăng nhập lại.");
                 navigate("/login");
+                setLoading(false); // Stop loading on error
                 return;
             }
+        } catch (e) {
+            console.error("Failed to parse user data from localStorage:", e);
+            toast.error("Lỗi xử lý dữ liệu người dùng. Không thể parse JSON. Vui lòng đăng nhập lại.");
+            navigate("/login");
+            setLoading(false); // Stop loading on error
+            return;
         }
 
-        // Fetch user's favorites after getting userId
+        // Fetch user's favorites only if userId is successfully obtained
         const fetchFavorites = async (id) => {
             try {
+                console.log("Fetching favorites for user ID:", id);
                 const response = await axios.get(`http://localhost:8080/api/users/${id}/favourites`, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
                 });
-                // Assuming the response data is an array of favorite food objects
-                const favoriteIds = new Set(response.data.map((food) => food.id));
+                const favoriteIds = new Set(response.data.map((food) => food.id || food._id)); // Use id or _id consistently
                 setFavoriteFoodIds(favoriteIds);
+                console.log("Favorites fetched:", favoriteIds);
             } catch (err) {
                 console.error("Error fetching favorites:", err);
-                // Handle error, but don't block food loading
+                toast.error("Không thể tải danh sách yêu thích.");
+                // Continue loading main data even if favorites fail
             }
         };
 
-        // Fetch promotions and food data from the backend
+        // Fetch promotions and all food data
         const fetchData = async () => {
             try {
                 setLoading(true);
-                // Fetch promotions
+                console.log("Fetching promotions...");
                 const promotionsResponse = await axios.get("http://localhost:8080/api/promotions", {
                     headers: {
                         Authorization: `Bearer ${token}`, // Include the JWT token
                     },
                 });
+                console.log("Promotions response data:", promotionsResponse.data); // Log fetched promotions
                 setPromotions(promotionsResponse.data);
 
-                // Fetch all foods
+                console.log("Fetching foods...");
                 const foodsResponse = await axios.get("http://localhost:8080/api/foods");
                 const allFoods = foodsResponse.data;
+                console.log("Foods response data:", allFoods); // Log fetched foods
                 setFoods(allFoods);
 
-                // Group foods by promotion
+                // Group foods by promotion AFTER both promotions and foods are fetched
                 const groupedFoods = {};
-                promotionsResponse.data.forEach((promotion) => {
-                    const applicableFoods = allFoods.filter(
-                        (food) =>
-                            promotion.applicableFoodIds && promotion.applicableFoodIds.includes(food.id.toString())
-                    );
-                    if (applicableFoods.length > 0) {
-                        groupedFoods[promotion.name] = {
-                            // Use promotion name as the group key
-                            icon: getCategoryIcon(promotion.name), // Reusing category icons based on promotion name, adjust as needed
-                            items: applicableFoods.map((food) => ({ ...food, promotionDetails: promotion })), // Add promotion details to food item
-                        };
-                    }
-                });
+                console.log("Starting to group foods by promotion...");
+                if (promotionsResponse.data && allFoods) { // Ensure data exists before processing
+                    promotionsResponse.data.forEach((promotion) => {
+                        console.log("Processing promotion for grouping:", promotion.name, ", Applicable Food IDs:", promotion.applicableFoodIds);
+                        const applicableFoods = allFoods.filter(
+                            (food) => {
+                                const foodIdString = String(food.id || food._id);
+                                const isApplicable = Array.isArray(promotion.applicableFoodIds) && promotion.applicableFoodIds.includes(foodIdString);
+                                // console.log(`  Checking food ${food.name} (ID: ${foodIdString}): Is applicable? ${isApplicable}`); // Optional: for very detailed logging per food
+                                return isApplicable;
+                            }
+                        );
+                        console.log("Found applicable foods for", promotion.name, ":", applicableFoods.length, "items");
+                        if (applicableFoods.length > 0) {
+                            groupedFoods[promotion.name] = {
+                                icon: getCategoryIcon(promotion.name), // Reusing category icons
+                                items: applicableFoods.map((food) => ({ ...food, promotionDetails: promotion })), // Add promotion details
+                            };
+                        }
+                    });
+                }
+
+                console.log("Finished grouping. Final grouped foods object:", groupedFoods);
                 setPromotionalFoods(groupedFoods);
 
-                // Initialize quantities state based on fetched foods
+                // Initialize quantities state based on all fetched foods
                 const initialQuantities = {};
                 allFoods.forEach((food) => {
-                    initialQuantities[food.id] = 0;
+                    initialQuantities[food.id || food._id] = 0; // Use id or _id consistently
                 });
                 setQuantities(initialQuantities);
 
                 setLoading(false);
+
             } catch (err) {
+                console.error("Error fetching promotions or foods:", err);
+                console.error("Error details:", err.response?.data);
                 setError(err);
                 setLoading(false);
-                console.error("Error fetching data:", err);
-                toast.error("Không thể tải dữ liệu khuyến mãi.");
+                toast.error("Không thể tải dữ liệu khuyến mãi hoặc món ăn.");
             }
         };
 
-        if (userId) {
-            // Only fetch if userId is available
-            fetchData();
-            fetchFavorites(userId);
+        // Call fetch operations after user ID is successfully obtained
+        if (currentUserId) {
+             fetchData(); // Fetch promotions and foods
+             fetchFavorites(currentUserId); // Fetch favorites
         }
-    }, [userId, navigate]); // Rerun effect if userId or navigate changes
+
+    }, [navigate]); // Dependency array includes navigate
 
     const toggleFavourite = async (food) => {
         const token = localStorage.getItem("jwtToken");
-        if (!token || !userId) {
-            toast.warning("Vui lòng đăng nhập để đánh dấu món ăn yêu thích.");
-            navigate("/login");
-            return;
-        }
+        // We don't need to check userId here again if the useEffect ensures we are logged in
+        if (!token || !userId) { // Keep check just in case, though should be handled by useEffect redirect
+             toast.warning("Vui lòng đăng nhập để đánh dấu món ăn yêu thích.");
+             navigate("/login");
+             return;
+         }
 
-        const isCurrentlyFavorite = favoriteFoodIds.has(food.id);
+        const foodIdentifier = food.id || food._id; // Use id or _id
+        const isCurrentlyFavorite = favoriteFoodIds.has(foodIdentifier);
 
         try {
             if (isCurrentlyFavorite) {
                 // Remove from favorites
-                await axios.delete(`http://localhost:8080/api/users/${userId}/favourites/${food.id}`, {
+                console.log("Attempting to remove from favorites for user", userId, "food", foodIdentifier);
+                await axios.delete(`http://localhost:8080/api/users/${userId}/favourites/${foodIdentifier}`, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
                 });
                 setFavoriteFoodIds((prev) => {
                     const newState = new Set(prev);
-                    newState.delete(food.id);
+                    newState.delete(foodIdentifier);
                     return newState;
                 });
                 toast.success("Đã xoá khỏi danh sách yêu thích!");
             } else {
                 // Add to favorites
+                console.log("Attempting to add to favorites for user", userId, "food", foodIdentifier);
                 await axios.post(
                     `http://localhost:8080/api/users/${userId}/favourites`,
-                    { foodId: food.id },
+                    { foodId: foodIdentifier }, // Send id or _id
                     {
                         headers: {
                             Authorization: `Bearer ${token}`,
@@ -202,42 +246,48 @@ const Promotions = () => {
                         },
                     }
                 );
-                setFavoriteFoodIds((prev) => new Set(prev).add(food.id));
+                setFavoriteFoodIds((prev) => new Set(prev).add(foodIdentifier));
                 toast.success("Đã thêm vào danh sách yêu thích!");
             }
         } catch (err) {
             console.error("Error toggling favorite status:", err);
-            toast.error("Không thể cập nhật trạng thái yêu thích.");
+            toast.error("Có lỗi xảy ra khi cập nhật yêu thích!");
         }
     };
 
     const handleChange = (foodId, delta) => {
         setQuantities((prev) => {
             const updated = { ...prev };
-            updated[foodId] = Math.max(0, (updated[foodId] || 0) + delta); // Allow quantity to be 0
+            const id = foodId.id || foodId._id; // Use id or _id consistently
+            updated[id] = Math.max(0, (updated[id] || 0) + delta); // Use id consistently
             return updated;
         });
     };
 
     const handleAddToCart = async (food) => {
-        const quantity = quantities[food.id];
+        const quantity = quantities[food.id || food._id]; // Use id or _id
         const token = localStorage.getItem("jwtToken");
 
-        if (!token) {
-            toast.warning("Vui lòng đăng nhập để thêm vào giỏ hàng!");
-            navigate("/login");
-            return;
-        }
+        // We don't need to check userId here again if the useEffect ensures we are logged in
+         if (!token || !userId) { // Keep check just in case
+             toast.warning("Vui lòng đăng nhập để thêm vào giỏ hàng!");
+             navigate("/login");
+             return;
+         }
+
+        const foodIdentifier = food.id || food._id; // Use id or _id
 
         if (quantity > 0 && userId) {
             try {
                 const itemToAdd = {
-                    foodId: food.id,
+                    foodId: foodIdentifier, // Use id or _id
                     name: food.name,
-                    price: food.price,
+                    price: food.price, // Use original price, promotion discount applied in cart/order
                     quantity: quantity,
                     imageUrl: food.image,
                 };
+
+                console.log("Adding to cart for user", userId, ":", itemToAdd);
 
                 await axios.post(`http://localhost:8080/api/carts/${userId}/items`, itemToAdd, {
                     headers: {
@@ -248,13 +298,14 @@ const Promotions = () => {
                 toast.success(`Đã thêm ${quantity} ${food.name} vào giỏ hàng!`);
 
                 // Reset quantity
-                setQuantities((prev) => ({ ...prev, [food.id]: 0 }));
+                setQuantities((prev) => ({ ...prev, [foodIdentifier]: 0 })); // Use id or _id consistently
 
                 // Trigger custom event to update header cart count
                 window.dispatchEvent(new Event("cartUpdated"));
             } catch (err) {
                 console.error("Error adding item to cart:", err);
-                toast.error("Có lỗi xảy ra khi thêm vào giỏ hàng!");
+                 const errorMessage = err.response?.data?.message || "Có lỗi xảy ra khi thêm vào giỏ hàng!";
+                 toast.error(errorMessage);
             }
         } else if (quantity === 0) {
             toast.warning("Vui lòng chọn số lượng lớn hơn 0!");
@@ -262,7 +313,7 @@ const Promotions = () => {
     };
 
     const handleViewDetails = (foodId) => {
-        navigate(`/food/${foodId}`);
+        navigate(`/food/${foodId}`); // Pass the correct food ID (id or _id)
     };
 
     const filteredFoods = foods.filter((food) => food.name.toLowerCase().includes(search.toLowerCase()));
@@ -403,7 +454,7 @@ const Promotions = () => {
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        handleChange(food.id, -1);
+                                                        handleChange(food, -1);
                                                     }}
                                                     className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-l-lg transition-colors"
                                                     disabled={(quantities[food.id] || 0) <= 0}
@@ -416,7 +467,7 @@ const Promotions = () => {
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        handleChange(food.id, 1);
+                                                        handleChange(food, 1);
                                                     }}
                                                     className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-r-lg transition-colors"
                                                 >
@@ -528,7 +579,7 @@ const Promotions = () => {
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        handleChange(food.id, -1);
+                                                        handleChange(food, -1);
                                                     }}
                                                     className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-l-lg transition-colors"
                                                     disabled={(quantities[food.id] || 0) <= 0}
@@ -541,7 +592,7 @@ const Promotions = () => {
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        handleChange(food.id, 1);
+                                                        handleChange(food, 1);
                                                     }}
                                                     className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-r-lg transition-colors"
                                                 >
