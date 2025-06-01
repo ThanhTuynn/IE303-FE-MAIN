@@ -1,16 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { CheckCircle, XCircle } from "lucide-react"; // Icons from Lucide
 import AddressChangePopup from "../components/AddressChangePopup";
 import PaymentButton from "../components/PaymentButton";
-import { useNavigate } from "react-router-dom";
+import EnhancedPaymentButton from "../components/EnhancedPaymentButton";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const Payment = () => {
     const [address, setAddress] = useState("Phương Uyên (+84) 82868383 Tầng 1, Tòa B, UIT");
     const [deliveryTime, setDeliveryTime] = useState("Giao ngay (15 - 30 phút)");
-    const [discountCode, setDiscountCode] = useState("BANMOINIFOODIE");
-    const [paymentMethod, setPaymentMethod] = useState("Tiền mặt");
+    const [paymentMethod, setPaymentMethod] = useState("PayOS");
     const [showAddressPopup, setShowAddressPopup] = useState(false);
-    const [showDiscountPopup, setShowDiscountPopup] = useState(false);
 
     const [receiverName, setReceiverName] = useState("Phương Uyên");
     const [phoneNumber, setPhoneNumber] = useState("082868383");
@@ -19,29 +18,56 @@ const Payment = () => {
     const [showTimePopup, setShowTimePopup] = useState(false);
     const [selectedTime, setSelectedTime] = useState("Giao ngay (15 - 30 phút)");
 
-    const [tempDiscountCode, setTempDiscountCode] = useState(discountCode);
-
     const [showPaymentPopup, setShowPaymentPopup] = useState(false);
     const [tempPaymentMethod, setTempPaymentMethod] = useState(paymentMethod);
 
+    // User state
+    const [userId, setUserId] = useState(null);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+    // Cart data from navigation
     const navigate = useNavigate();
+    const location = useLocation();
+    const cartData = location.state;
 
     const [showOrderSuccess, setShowOrderSuccess] = useState(false);
 
-    const totalPrice = 60000;
-    const shippingFee = 10000;
-    const discount = 20000;
-    const totalAmount = totalPrice + shippingFee - discount;
+    // Get user info from localStorage and cart data
+    useEffect(() => {
+        const token = localStorage.getItem("jwtToken");
+        const userData = localStorage.getItem("userData");
 
-    // Sample order items for payment
-    const orderItems = [
+        if (token && userData) {
+            try {
+                const user = JSON.parse(userData);
+                setUserId(user.id || user._id);
+                setIsLoggedIn(true);
+                console.log("User logged in:", user);
+            } catch (error) {
+                console.error("Error parsing user data:", error);
+                setIsLoggedIn(false);
+            }
+        } else {
+            setIsLoggedIn(false);
+            console.warn("No user data found, user may need to login");
+        }
+
+        // Check if cart data exists
+        if (!cartData || !cartData.cartItems || cartData.cartItems.length === 0) {
+            alert("Không có sản phẩm nào được chọn. Vui lòng quay lại giỏ hàng.");
+            navigate("/cart");
+        }
+    }, [cartData, navigate]);
+
+    // Use cart data or fallback to sample data
+    const orderItems = cartData?.cartItems || [
         { name: "Bánh mì thịt", quantity: 1, price: 20000 },
         { name: "Bánh mì trứng", quantity: 1, price: 20000 },
         { name: "Nước uống", quantity: 1, price: 10000 },
     ];
 
-    // Customer info for PayOS
-    const customerInfo = {
+    const totalAmount = cartData?.totalAmount || 50000;
+    const customerInfo = cartData?.customerInfo || {
         name: receiverName,
         email: "customer@unifoodie.com",
         phone: phoneNumber.replace("(+84) ", "0"),
@@ -53,11 +79,6 @@ const Payment = () => {
         const updatedAddress = `${receiverName} (+84) ${phoneNumber} ${newAddress}`;
         setAddress(updatedAddress);
         setShowAddressPopup(false);
-    };
-
-    const handleDiscountCodeChange = (newDiscountCode) => {
-        setDiscountCode(newDiscountCode);
-        setShowDiscountPopup(false); // Close the popup after saving
     };
 
     return (
@@ -91,23 +112,6 @@ const Payment = () => {
                     </button>
                 </div>
 
-                {/* Discount Code Section */}
-                <div className="flex justify-between items-center mb-6 border p-4 border-gray-300 rounded-lg">
-                    <div>
-                        <h3 className="text-lg font-semibold">Mã giảm giá</h3>
-                        <p>{discountCode}</p>
-                    </div>
-                    <button
-                        className="text-blue-600 hover:text-blue-800"
-                        onClick={() => {
-                            setTempDiscountCode(discountCode); // giữ giá trị đang dùng
-                            setShowDiscountPopup(true);
-                        }}
-                    >
-                        Chọn mã giảm giá khác
-                    </button>
-                </div>
-
                 {/* Payment Method Section */}
                 <div className="flex justify-between items-center mb-6 border p-4 border-gray-300 rounded-lg">
                     <div>
@@ -128,90 +132,124 @@ const Payment = () => {
                 {/* Order Summary */}
                 <div className="border bg-[#fcf3f3] p-6 rounded-lg shadow-lg">
                     <div className="border-b mb-4 pb-4">
-                        <div className="flex justify-between text-lg font-medium mb-4">
-                            <span>Tổng tiền hàng</span>
-                            <span>{totalPrice.toLocaleString()}đ</span>
-                        </div>
-                        <div className="flex justify-between text-lg font-medium mb-4">
-                            <span>Tổng tiền phí vận chuyển</span>
-                            <span>{shippingFee.toLocaleString()}đ</span>
-                        </div>
-                        <div className="flex justify-between text-lg font-medium mb-4">
-                            <span>Tổng cộng mã giảm giá</span>
-                            <span>-{discount.toLocaleString()}đ</span>
-                        </div>
                         <div className="flex justify-between text-lg font-semibold mb-4">
                             <span>Tổng cần thanh toán</span>
                             <span>{totalAmount.toLocaleString()}đ</span>
                         </div>
                     </div>
 
-                    {/* Đặt hàng Button */}
+                    {/* Payment Buttons based on selected method */}
                     <div className="flex flex-col gap-3 mt-6">
-                        {/* PayOS Payment Button - Recommended */}
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <div className="flex items-center gap-2 mb-2">
-                                <span className="text-blue-600 font-semibold">
-                                    💳 Thanh toán trực tuyến (Khuyến nghị)
-                                </span>
-                                <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-                                    Nhanh & An toàn
-                                </span>
+                        {paymentMethod === "PayOS" ? (
+                            /* PayOS Payment */
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-blue-600 font-semibold">💳 Thanh toán qua PayOS</span>
+                                    <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                                        Nhanh & An toàn
+                                    </span>
+                                </div>
+
+                                {/* Login warning */}
+                                {!isLoggedIn && (
+                                    <div className="bg-yellow-50 border border-yellow-200 rounded p-3 mb-3">
+                                        <p className="text-yellow-800 text-sm">
+                                            ⚠️ Vui lòng đăng nhập để có thể đặt hàng và theo dõi đơn hàng
+                                        </p>
+                                        <button
+                                            onClick={() => navigate("/login")}
+                                            className="text-blue-600 underline text-sm mt-1"
+                                        >
+                                            Đăng nhập ngay
+                                        </button>
+                                    </div>
+                                )}
+
+                                <EnhancedPaymentButton
+                                    userId={userId || "1"} // Fallback for demo
+                                    orderItems={orderItems}
+                                    deliveryAddress={address}
+                                    paymentMethod="PayOS"
+                                    specialInstructions=""
+                                    customerInfo={customerInfo}
+                                    disabled={!isLoggedIn}
+                                    className={`w-full py-3 rounded-lg font-medium ${
+                                        isLoggedIn
+                                            ? "bg-red-600 hover:bg-red-700 text-white"
+                                            : "bg-gray-400 text-gray-200 cursor-not-allowed"
+                                    }`}
+                                    // ✅ NO onSuccess for PayOS payments
+                                    // User will be redirected to PayOS, then return via backend URL
+                                    // Success page will be shown after payment completion at return URL
+                                    onError={(error) => {
+                                        console.error("❌ Enhanced payment error:", error);
+                                        alert("Đặt hàng thất bại: " + error.message);
+                                    }}
+                                />
+                                <p className="text-xs text-gray-600 mt-1">
+                                    Hỗ trợ thanh toán qua ngân hàng, ví điện tử và thẻ ATM
+                                </p>
                             </div>
-                            <PaymentButton
-                                orderId={orderId}
-                                amount={totalAmount}
-                                description={`Đơn hàng UniFoodie - ${orderItems.length} món`}
-                                customerInfo={customerInfo}
-                                items={orderItems}
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium"
-                                onSuccess={(result) => {
-                                    console.log("PayOS payment created:", result);
-                                    navigate("/payment-success", {
-                                        state: {
-                                            orderCode: result.orderCode,
-                                            amount: totalAmount,
-                                            items: orderItems,
-                                            customerInfo,
-                                        },
-                                    });
-                                }}
-                                onError={(error) => {
-                                    console.error("PayOS payment error:", error);
-                                    alert("Tạo thanh toán PayOS thất bại: " + error.message);
-                                }}
-                            />
-                            <p className="text-xs text-gray-600 mt-1">
-                                Hỗ trợ thanh toán qua ngân hàng, ví điện tử và thẻ ATM
-                            </p>
-                        </div>
+                        ) : (
+                            /* Cash Payment */
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-green-600 font-semibold">💵 Thanh toán bằng tiền mặt</span>
+                                    <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                                        Thanh toán khi nhận hàng
+                                    </span>
+                                </div>
 
-                        {/* Traditional Payment Button */}
-                        <div className="text-center">
-                            <div className="flex items-center my-3">
-                                <div className="flex-1 border-t border-gray-300"></div>
-                                <span className="px-3 text-gray-500 text-sm">hoặc</span>
-                                <div className="flex-1 border-t border-gray-300"></div>
+                                {/* Login warning for cash payment too */}
+                                {!isLoggedIn && (
+                                    <div className="bg-yellow-50 border border-yellow-200 rounded p-3 mb-3">
+                                        <p className="text-yellow-800 text-sm">
+                                            ⚠️ Vui lòng đăng nhập để có thể đặt hàng và theo dõi đơn hàng
+                                        </p>
+                                        <button
+                                            onClick={() => navigate("/login")}
+                                            className="text-blue-600 underline text-sm mt-1"
+                                        >
+                                            Đăng nhập ngay
+                                        </button>
+                                    </div>
+                                )}
+
+                                <EnhancedPaymentButton
+                                    userId={userId || "1"} // Fallback for demo
+                                    orderItems={orderItems}
+                                    deliveryAddress={address}
+                                    paymentMethod="Tiền mặt"
+                                    specialInstructions="Thanh toán khi nhận hàng"
+                                    customerInfo={customerInfo}
+                                    disabled={!isLoggedIn}
+                                    className={`w-full py-3 rounded-lg font-medium ${
+                                        isLoggedIn
+                                            ? "bg-green-600 hover:bg-green-700 text-white"
+                                            : "bg-gray-400 text-gray-200 cursor-not-allowed"
+                                    }`}
+                                    onSuccess={(result) => {
+                                        console.log("✅ Cash order success:", result);
+                                        navigate("/payment-success", {
+                                            state: {
+                                                orderId: result.order.id,
+                                                orderCode: null, // No payment code for cash
+                                                amount: result.order.totalAmount,
+                                                items: orderItems,
+                                                customerInfo,
+                                                orderData: result.order,
+                                                paymentMethod: "Tiền mặt",
+                                            },
+                                        });
+                                    }}
+                                    onError={(error) => {
+                                        console.error("❌ Cash order error:", error);
+                                        alert("Đặt hàng thất bại: " + error.message);
+                                    }}
+                                />
+                                <p className="text-xs text-gray-600 mt-1">Bạn sẽ thanh toán khi nhận hàng</p>
                             </div>
-
-                            <button
-                                className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-medium"
-                                onClick={() => {
-                                    const onlineMethods = ["Chuyển khoản ngân hàng", "MOMO", "ZaloPay"];
-
-                                    if (onlineMethods.includes(paymentMethod)) {
-                                        navigate("/qr-payment", { state: { method: paymentMethod } });
-                                    } else {
-                                        setShowOrderSuccess(true); // Hiện popup
-                                        setTimeout(() => {
-                                            navigate("/cart"); // Quay về sau 3s
-                                        }, 5000);
-                                    }
-                                }}
-                            >
-                                Đặt hàng với {paymentMethod}
-                            </button>
-                        </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -359,39 +397,6 @@ const Payment = () => {
                 </div>
             )}
 
-            {/* Discount Code Change Popup */}
-            {showDiscountPopup && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex justify-center items-center">
-                    <div className="bg-white p-8 rounded-lg w-96 shadow-lg">
-                        <h3 className="text-2xl font-semibold mb-4">Chọn mã giảm giá</h3>
-                        <input
-                            type="text"
-                            value={tempDiscountCode}
-                            onChange={(e) => setTempDiscountCode(e.target.value)}
-                            placeholder="Nhập mã giảm giá"
-                            className="w-full border border-gray-300 p-2 mb-4 rounded-md"
-                        />
-                        <div className="flex justify-between">
-                            <button
-                                onClick={() => setShowDiscountPopup(false)}
-                                className="bg-gray-300 text-black py-2 px-4 rounded-lg hover:bg-gray-400"
-                            >
-                                Hủy
-                            </button>
-                            <button
-                                onClick={() => {
-                                    setDiscountCode(tempDiscountCode); // lưu mã mới
-                                    setShowDiscountPopup(false);
-                                }}
-                                className="bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700"
-                            >
-                                Lưu
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {/* Payment Method Change Popup */}
             {showPaymentPopup && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex justify-center items-center">
@@ -407,46 +412,48 @@ const Payment = () => {
 
                             {[
                                 {
-                                    label: "Tiền mặt",
-                                    icon: "https://res.cloudinary.com/dbr85jktp/image/upload/v1748287327/CASH_ypopzk.png",
-                                },
-                                {
                                     label: "PayOS - Thanh toán trực tuyến",
+                                    value: "PayOS",
                                     icon: "https://res.cloudinary.com/dai92e7cq/image/upload/v1748287590/payos-logo_hxqwdi.png",
+                                    description: "Thanh toán ngay qua ngân hàng, ví điện tử",
                                 },
                                 {
-                                    label: "Chuyển khoản ngân hàng",
-                                    icon: "https://res.cloudinary.com/dbr85jktp/image/upload/v1748287444/1052854_s2yqyr.png",
-                                },
-                                {
-                                    label: "MOMO",
-                                    icon: "https://res.cloudinary.com/dbr85jktp/image/upload/v1748287326/momo_nor95x.webp",
-                                },
-                                {
-                                    label: "ZaloPay",
-                                    icon: "https://res.cloudinary.com/dbr85jktp/image/upload/v1748287327/idv2DAbjER_1748287277081_omlczg.jpg",
+                                    label: "Tiền mặt",
+                                    value: "Tiền mặt",
+                                    icon: "https://res.cloudinary.com/dbr85jktp/image/upload/v1748287327/CASH_ypopzk.png",
+                                    description: "Thanh toán khi nhận hàng",
                                 },
                             ].map((option) => (
                                 <div
-                                    key={option.label}
-                                    onClick={() => setTempPaymentMethod(option.label)}
-                                    className={`flex items-center gap-3 border px-4 py-3 mb-3 rounded-md cursor-pointer ${
-                                        tempPaymentMethod === option.label
-                                            ? "border-red-600 text-red-600 font-semibold"
-                                            : "border-gray-300"
+                                    key={option.value}
+                                    onClick={() => setTempPaymentMethod(option.value)}
+                                    className={`flex items-center gap-3 border px-4 py-4 mb-3 rounded-md cursor-pointer transition-colors ${
+                                        tempPaymentMethod === option.value
+                                            ? "border-red-600 bg-red-50 text-red-600 font-semibold"
+                                            : "border-gray-300 hover:border-gray-400"
                                     }`}
                                 >
-                                    {/* Vòng tròn chứa hình ảnh */}
-                                    <div className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 border border-gray-300 overflow-hidden">
-                                        <img src={option.icon} alt={option.label} className="w-6 h-6 object-contain" />
+                                    {/* Icon */}
+                                    <div className="w-12 h-12 flex items-center justify-center rounded-full bg-gray-100 border border-gray-300 overflow-hidden">
+                                        <img src={option.icon} alt={option.label} className="w-8 h-8 object-contain" />
                                     </div>
 
-                                    {/* Nhãn phương thức */}
-                                    <span className="text-base">{option.label}</span>
+                                    {/* Label and description */}
+                                    <div className="flex-1">
+                                        <p className="text-base font-medium">{option.label}</p>
+                                        <p className="text-sm text-gray-600">{option.description}</p>
+                                    </div>
+
+                                    {/* Selected indicator */}
+                                    {tempPaymentMethod === option.value && (
+                                        <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center">
+                                            <div className="w-3 h-3 bg-white rounded-full"></div>
+                                        </div>
+                                    )}
                                 </div>
                             ))}
 
-                            {/* Nút hành động */}
+                            {/* Action buttons */}
                             <div className="flex justify-between mt-6">
                                 <button
                                     onClick={() => setShowPaymentPopup(false)}

@@ -1,117 +1,138 @@
-import React, { useState, useEffect } from 'react';
-import { Trash, CheckSquare, Square } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import React, { useState, useEffect } from "react";
+import { Trash, CheckSquare, Square } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import PaymentButton from "../components/PaymentButton";
+import EnhancedPaymentButton from "../components/EnhancedPaymentButton";
 
 const Cart = () => {
-  const navigate = useNavigate();
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [userId, setUserId] = useState(null);
-
+    const [items, setItems] = useState([]);
     const [discountCode, setDiscountCode] = useState("");
     const [discount, setDiscount] = useState(0);
+    const [userId, setUserId] = useState(null);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const navigate = useNavigate();
 
-  useEffect(() => {
-    const token = localStorage.getItem('jwtToken');
-    const userData = localStorage.getItem('userData');
+    // Customer info from localStorage
+    const customerInfo = (() => {
+        try {
+            const userData = localStorage.getItem("userData");
+            if (userData) {
+                const user = JSON.parse(userData);
+                return {
+                    name: user.fullName || user.name || "Khách hàng",
+                    email: user.email || "",
+                    phone: user.phone || "",
+                };
+            }
+        } catch (e) {
+            console.error("Failed to parse user data:", e);
+        }
+        return {
+            name: "Khách hàng",
+            email: "",
+            phone: "",
+        };
+    })();
 
-    if (!token || !userData) {
-      alert("Please log in to view your cart.");
-      navigate('/login');
-      return;
-    }
+    // Get user info from localStorage
+    useEffect(() => {
+        const token = localStorage.getItem("jwtToken");
+        const userData = localStorage.getItem("userData");
 
-    try {
-        const user = JSON.parse(userData);
-        setUserId(user.id);
-    } catch (e) {
-        console.error("Failed to parse user data from localStorage:", e);
-        alert("Error retrieving user data.");
-        navigate('/login');
-        return;
-    }
+        if (token && userData) {
+            try {
+                const user = JSON.parse(userData);
+                setUserId(user.id || user._id);
+                setIsLoggedIn(true);
+                console.log("Cart - User logged in:", user);
+            } catch (error) {
+                console.error("Error parsing user data:", error);
+                setIsLoggedIn(false);
+            }
+        } else {
+            setIsLoggedIn(false);
+            console.warn("Cart - No user data found, user may need to login");
+        }
+    }, []);
+
+    useEffect(() => {
+        if (userId) {
+            fetchCart();
+        }
+    }, [userId]);
+
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     const fetchCart = async () => {
-      try {
-        setLoading(true);
-        if (userId) {
-            const response = await axios.get(`http://localhost:8080/api/carts/${userId}`, {
-              headers: {
-                'Authorization': `Bearer ${token}`
-              }
-            });
-            setItems(response.data.items);
+        try {
+            setLoading(true);
+            if (userId) {
+                const response = await axios.get(`http://localhost:8080/api/carts/${userId}`, {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("jwtToken")}`,
+                    },
+                });
+                setItems(response.data.items);
+            }
+            setLoading(false);
+        } catch (err) {
+            setError(err);
+            setLoading(false);
+            console.error("Error fetching cart:", err);
+            alert("Failed to fetch cart data.");
         }
-        setLoading(false);
-      } catch (err) {
-        setError(err);
-        setLoading(false);
-        console.error("Error fetching cart:", err);
-        alert("Failed to fetch cart data.");
-      }
     };
 
-    if (userId) {
-       fetchCart();
-    }
-
-  }, [userId]);
-
-  const handleQuantityChange = async (id, delta) => {
-    const token = localStorage.getItem('jwtToken');
-    // Optimistically update the state
-    setItems((prevItems) =>
-      prevItems.map((item) =>
-        item.foodId === id
-          ? { ...item, quantity: Math.max(1, item.quantity + delta) }
-          : item
-      )
-    );
-
-    const newQuantity = items.find(item => item.foodId === id).quantity + delta; // Calculate new quantity
-    const finalQuantity = Math.max(1, newQuantity); // Ensure quantity is at least 1
-
-    if (!userId || !token) {
-        alert("User not logged in. Cannot update cart.");
-        return;
-    }
-
-    try {
-        // Call backend API to update the quantity
-        await axios.put(`http://localhost:8080/api/carts/${userId}/items/${id}?quantity=${finalQuantity}`, null, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-        console.log(`Quantity updated for foodId ${id} to ${finalQuantity}`);
-
-    } catch (err) {
-        console.error("Error updating quantity on backend:", err);
-        alert("Failed to update item quantity.");
-        // Revert the optimistic update on error
+    const handleQuantityChange = async (id, delta) => {
+        const token = localStorage.getItem("jwtToken");
+        // Optimistically update the state
         setItems((prevItems) =>
-          prevItems.map((item) =>
-            item.foodId === id
-              ? { ...item, quantity: item.quantity - delta } // Revert to previous quantity
-              : item
-          )
+            prevItems.map((item) =>
+                item.foodId === id ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
+            )
         );
-    }
-  };
 
-  const handleCheckboxChange = (id) => {
-    setItems((prevItems) =>
-      prevItems.map((item) =>
-        item.foodId === id ? { ...item, checked: !item.checked } : item
-      )
-    );
-  };
+        const newQuantity = items.find((item) => item.foodId === id).quantity + delta; // Calculate new quantity
+        const finalQuantity = Math.max(1, newQuantity); // Ensure quantity is at least 1
 
-  const handleRemoveItem = (id) => {
-    setItems((prevItems) => prevItems.filter((item) => item.foodId !== id));
-  };
+        if (!userId || !token) {
+            alert("User not logged in. Cannot update cart.");
+            return;
+        }
+
+        try {
+            // Call backend API to update the quantity
+            await axios.put(`http://localhost:8080/api/carts/${userId}/items/${id}?quantity=${finalQuantity}`, null, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            console.log(`Quantity updated for foodId ${id} to ${finalQuantity}`);
+        } catch (err) {
+            console.error("Error updating quantity on backend:", err);
+            alert("Failed to update item quantity.");
+            // Revert the optimistic update on error
+            setItems((prevItems) =>
+                prevItems.map((item) =>
+                    item.foodId === id
+                        ? { ...item, quantity: item.quantity - delta } // Revert to previous quantity
+                        : item
+                )
+            );
+        }
+    };
+
+    const handleCheckboxChange = (id) => {
+        setItems((prevItems) =>
+            prevItems.map((item) => (item.foodId === id ? { ...item, checked: !item.checked } : item))
+        );
+    };
+
+    const handleRemoveItem = (id) => {
+        setItems((prevItems) => prevItems.filter((item) => item.foodId !== id));
+    };
 
     const handleDiscountApply = () => {
         if (discountCode === "DISCOUNT20") {
@@ -139,6 +160,45 @@ const Cart = () => {
         navigate("/payment");
     };
 
+    // Test backend connection
+    const testBackendConnection = async () => {
+        try {
+            console.log("Testing backend connection...");
+
+            // Test payment endpoint since it doesn't require auth
+            const testData = {
+                orderId: "TEST_" + Date.now(),
+                amount: 10000,
+                description: "Test payment from frontend",
+                customerName: "Test User",
+                customerEmail: "test@example.com",
+                customerPhone: "0123456789",
+                items: [{ name: "Test Item", quantity: 1, price: 10000 }],
+            };
+
+            const response = await fetch("http://localhost:8080/api/payments/create", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(testData),
+            });
+
+            console.log("Test response status:", response.status);
+            const text = await response.text();
+            console.log("Test response text:", text);
+
+            if (response.ok) {
+                alert(`✅ Backend connected successfully! Status: ${response.status}`);
+            } else {
+                alert(`❌ Backend error: Status ${response.status}, Response: ${text.substring(0, 200)}`);
+            }
+        } catch (error) {
+            console.error("Backend test error:", error);
+            alert(`❌ Backend test failed: ${error.message}`);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-[#f9f9f9] font-kanit flex flex-col zoom-80">
             <div className="flex flex-col md:flex-row flex-grow p-8 bg-white">
@@ -146,21 +206,29 @@ const Cart = () => {
                 <div className="w-full md:w-2/3 bg-white px-6 py-12 rounded-lg border border-gray-300">
                     <div className="flex justify-between items-center mb-6">
                         <h2 className="text-4xl font-bold text-black">Giỏ hàng của bạn</h2>
-                        <button
-                            onClick={() => navigate("/order-history")}
-                            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm font-semibold shadow"
-                        >
-                            Lịch sử đơn hàng
-                        </button>
+                        <div className="space-x-2">
+                            <button
+                                onClick={testBackendConnection}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-semibold shadow"
+                            >
+                                Test Backend
+                            </button>
+                            <button
+                                onClick={() => navigate("/order-history")}
+                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm font-semibold shadow"
+                            >
+                                Lịch sử đơn hàng
+                            </button>
+                        </div>
                     </div>
 
                     {items.map((item) => (
                         <div
-                            key={item.id}
+                            key={item.foodId}
                             className="flex items-center justify-between mb-6 border-b border-gray-200 pb-6"
                         >
                             <div className="flex items-center">
-                                <div onClick={() => handleCheckboxChange(item.id)} className="mr-4 cursor-pointer">
+                                <div onClick={() => handleCheckboxChange(item.foodId)} className="mr-4 cursor-pointer">
                                     {item.checked ? <CheckSquare size={24} /> : <Square size={24} />}
                                 </div>
                                 <img
@@ -173,14 +241,14 @@ const Cart = () => {
 
                             <div className="flex items-center">
                                 <button
-                                    onClick={() => handleQuantityChange(item.id, -1)}
+                                    onClick={() => handleQuantityChange(item.foodId, -1)}
                                     className="px-3 py-2 text-xl border rounded-lg"
                                 >
                                     −
                                 </button>
                                 <span className="mx-4 text-lg">{item.quantity}</span>
                                 <button
-                                    onClick={() => handleQuantityChange(item.id, 1)}
+                                    onClick={() => handleQuantityChange(item.foodId, 1)}
                                     className="px-3 py-2 text-xl border rounded-lg"
                                 >
                                     +
@@ -190,7 +258,7 @@ const Cart = () => {
                             <div className="text-lg">{item.price * item.quantity}đ</div>
 
                             <button
-                                onClick={() => handleRemoveItem(item.id)}
+                                onClick={() => handleRemoveItem(item.foodId)}
                                 className="text-red-600 hover:text-red-800 ml-4"
                             >
                                 <Trash size={24} />
@@ -234,45 +302,33 @@ const Cart = () => {
                         </div>
                     </div>
 
-                    {/* Payment Button */}
+                    {/* Continue Button */}
                     {selectedItems.length > 0 && finalAmount > 0 ? (
-                        <div className="mt-6 space-y-3">
-                            <PaymentButton
-                                orderId={orderId}
-                                amount={finalAmount}
-                                description={`Đơn hàng UniFoodie - ${selectedItems.length} món`}
-                                customerInfo={customerInfo}
-                                items={paymentItems}
-                                className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-full shadow-md"
-                                onSuccess={(result) => {
-                                    console.log("Payment created:", result);
-                                    // Redirect to success page after payment
-                                    navigate("/payment-success", {
+                        <div className="mt-6">
+                            <button
+                                onClick={() => {
+                                    // Navigate to payment page with cart data
+                                    navigate("/payment", {
                                         state: {
-                                            orderCode: result.orderCode,
-                                            amount: finalAmount,
-                                            items: selectedItems,
+                                            cartItems: selectedItems,
+                                            totalAmount: finalAmount,
+                                            originalTotal: totalPrice,
+                                            discount: discount,
+                                            customerInfo: customerInfo,
+                                            userId: userId,
                                         },
                                     });
                                 }}
-                                onError={(error) => {
-                                    console.error("Payment error:", error);
-                                    alert("Tạo thanh toán thất bại: " + error.message);
-                                }}
-                            />
-
-                            <button
-                                onClick={handleProceedToPayment}
-                                className="w-full bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-full text-sm"
+                                className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-full text-lg font-semibold shadow-md"
                             >
-                                Hoặc tiếp tục với thanh toán thông thường
+                                Tiếp tục đặt hàng
                             </button>
                         </div>
                     ) : (
                         <div className="mt-6">
                             <div className="text-center text-gray-500 py-4">
                                 {selectedItems.length === 0
-                                    ? "Vui lòng chọn sản phẩm để thanh toán"
+                                    ? "Vui lòng chọn sản phẩm để tiếp tục"
                                     : "Không có sản phẩm hợp lệ"}
                             </div>
                         </div>
