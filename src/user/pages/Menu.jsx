@@ -11,7 +11,7 @@ import {
     FaMinus,
     FaPlus,
 } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios"; // Import axios
 import aiRecommendationService from "../services/aiRecommendationService"; // Import AI service
 import { toast } from "../components/Toast";
@@ -622,12 +622,10 @@ const Menu = () => {
                                                 </h3>
                                                 <p className="text-red-600 font-bold text-xl mb-3">
                                                     {food.price.toLocaleString("vi-VN")}đ
-                                                </p>{" "}
-                                                {/* Format price */}
+                                                </p>
                                                 <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">
                                                     {food.description}
-                                                </p>{" "}
-                                                {/* Use food.description */}
+                                                </p>
                                                 {/* Action Row */}
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center border-2 border-gray-200 rounded-lg bg-white">
@@ -640,12 +638,10 @@ const Menu = () => {
                                                             disabled={(quantities[food.id] || 0) <= 0}
                                                         >
                                                             <FaMinus size={12} />
-                                                        </button>{" "}
-                                                        {/* Use food.id */}
+                                                        </button>
                                                         <span className="w-12 h-8 flex items-center justify-center text-gray-800 font-semibold bg-gray-50">
                                                             {quantities[food.id] || 0}
-                                                        </span>{" "}
-                                                        {/* Use quantities object */}
+                                                        </span>
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
@@ -654,8 +650,7 @@ const Menu = () => {
                                                             className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-r-lg transition-colors"
                                                         >
                                                             <FaPlus size={12} />
-                                                        </button>{" "}
-                                                        {/* Use food.id */}
+                                                        </button>
                                                     </div>
                                                     <button
                                                         disabled={(quantities[food.id] || 0) === 0 || !userId} // Disable if quantity is 0 or not logged in
