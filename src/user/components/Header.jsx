@@ -7,6 +7,12 @@ const Header = () => {
     const navigate = useNavigate();
     const [isLoggedIn, setIsLoggedIn] = useState(false);
 
+    // Check login status on component mount
+    React.useEffect(() => {
+        const token = localStorage.getItem('jwtToken');
+        setIsLoggedIn(!!token); // Update state based on token presence
+    }, []);
+
     const isActive = (path) => location.pathname === path;
 
     const handleLogin = () => {
@@ -14,7 +20,10 @@ const Header = () => {
     };
 
     const handleLogout = () => {
-        setIsLoggedIn(false);
+        localStorage.removeItem('jwtToken'); // Clear JWT token
+        localStorage.removeItem('userData'); // Clear user data
+        setIsLoggedIn(false); // Update state
+        navigate("/login"); // Redirect to login page
     };
 
     return (
@@ -77,37 +86,53 @@ const Header = () => {
                 </nav>
 
                 <div className="flex space-x-4">
-                    <Link to="/favourite">
-                        <Heart
-                            className={`h-6 w-6 cursor-pointer transition-colors duration-200 ${
-                                isActive("/favourite") ? "text-red-600" : "text-black"
-                            }`}
-                        />
-                    </Link>
-
-                    <Link to="/notifications">
-                        <Bell
-                            className={`h-6 w-6 cursor-pointer transition-colors duration-200 ${
-                                isActive("/notifications") ? "text-red-600" : "text-black"
-                            }`}
-                        />
-                    </Link>
-
-                    <Link to="/profile">
-                        <User
-                            className={`h-6 w-6 cursor-pointer transition-colors duration-200 ${
-                                isActive("/profile") ? "text-red-600" : "text-black"
-                            }`}
-                        />
-                    </Link>
-
-                    <Link to="/cart">
-                        <ShoppingBag
-                            className={`h-6 w-6 cursor-pointer transition-colors duration-200 ${
-                                isActive("/cart") ? "text-red-600" : "text-black"
-                            }`}
-                        />
-                    </Link>
+                    {isLoggedIn ? (
+                        <> {/* User icons and Logout */}
+                            <Link to="/favourite">
+                                <Heart
+                                    className={`h-6 w-6 cursor-pointer transition-colors duration-200 ${
+                                        isActive("/favourite") ? "text-red-600" : "text-black"
+                                    }`}
+                                />
+                            </Link>
+                            <Link to="/notifications">
+                                <Bell
+                                    className={`h-6 w-6 cursor-pointer transition-colors duration-200 ${
+                                        isActive("/notifications") ? "text-red-600" : "text-black"
+                                    }`}
+                                />
+                            </Link>
+                            <Link to="/profile">
+                                <User
+                                    className={`h-6 w-6 cursor-pointer transition-colors duration-200 ${
+                                        isActive("/profile") ? "text-red-600" : "text-black"
+                                    }`}
+                                />
+                            </Link>
+                            <Link to="/cart">
+                                <ShoppingBag
+                                    className={`h-6 w-6 cursor-pointer transition-colors duration-200 ${
+                                        isActive("/cart") ? "text-red-600" : "text-black"
+                                    }`}
+                                />
+                            </Link>
+                            {/* Logout Button */}
+                            <button
+                                onClick={handleLogout}
+                                className="text-black hover:text-red-600 transition-colors duration-200 text-base font-semibold"
+                            >
+                                Đăng xuất
+                            </button>
+                        </>
+                    ) : (
+                        // Login/Signup Button
+                        <button
+                            onClick={handleLogin}
+                            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full text-sm font-semibold transition-colors duration-200"
+                        >
+                            ĐĂNG NHẬP / ĐĂNG KÝ
+                        </button>
+                    )}
                 </div>
             </div>
 

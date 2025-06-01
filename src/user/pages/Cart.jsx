@@ -113,10 +113,6 @@ const Cart = () => {
     setItems((prevItems) => prevItems.filter((item) => item.foodId !== id));
   };
 
-    const handleRemoveItem = (id) => {
-        setItems((prevItems) => prevItems.filter((item) => item.id !== id));
-    };
-
     const handleDiscountApply = () => {
         if (discountCode === "DISCOUNT20") {
             setDiscount(20000);
