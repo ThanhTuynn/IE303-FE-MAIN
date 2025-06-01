@@ -339,6 +339,7 @@ const Menu = () => {
                                     <div
                                         key={`ai-${food.id}`}
                                         className="border-2 border-purple-200 rounded-xl shadow-lg p-4 bg-gradient-to-br from-purple-50 to-pink-50 flex flex-col justify-between min-h-[400px] relative transform hover:scale-105 transition-transform duration-200"
+                                        onClick={() => navigate(`/food/${food._id || food.id}`)}
                                     >
                                         {/* AI Badge */}
                                         <div className="absolute top-2 left-2 z-10">
@@ -351,7 +352,10 @@ const Menu = () => {
                                         {userId && (
                                             <button
                                                 className="absolute top-2 right-2 text-xl focus:outline-none"
-                                                onClick={() => toggleFavourite(food)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    toggleFavourite(food);
+                                                }}
                                             >
                                                 <FaHeart
                                                     className={`text-2xl ${
@@ -384,7 +388,10 @@ const Menu = () => {
                                         <div className="flex items-center justify-between mt-auto">
                                             <div className="flex items-center border-2 border-purple-300 rounded px-2 py-1 bg-white">
                                                 <button
-                                                    onClick={() => handleChange(food.id, -1)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleChange(food.id, -1);
+                                                    }}
                                                     className="px-2 text-xl text-purple-600"
                                                 >
                                                     −
@@ -393,7 +400,10 @@ const Menu = () => {
                                                     {quantities[food.id] || 0}
                                                 </span>
                                                 <button
-                                                    onClick={() => handleChange(food.id, 1)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleChange(food.id, 1);
+                                                    }}
                                                     className="px-2 text-xl text-purple-600"
                                                 >
                                                     +
@@ -401,7 +411,10 @@ const Menu = () => {
                                             </div>
                                             <button
                                                 disabled={(quantities[food.id] || 0) === 0 || !userId}
-                                                onClick={() => handleAddToCart(food)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleAddToCart(food);
+                                                }}
                                                 className={`text-sm px-4 py-2 rounded-lg font-semibold transition duration-300 ${
                                                     (quantities[food.id] || 0) === 0 || !userId
                                                         ? "bg-gray-300 text-gray-600 cursor-not-allowed"
@@ -451,13 +464,17 @@ const Menu = () => {
                                 {filteredFoods.map((food) => (
                                     <div
                                         key={food.id}
-                                        className="border rounded-xl shadow p-4 bg-white flex flex-col justify-between min-h-[400px] relative"
+                                        className="border rounded-xl shadow p-4 bg-white flex flex-col justify-between min-h-[400px] relative cursor-pointer hover:shadow-lg transition-shadow"
+                                        onClick={() => navigate(`/food/${food._id || food.id}`)}
                                     >
                                         {/* Favourite Icon */}
                                         {userId && (
                                             <button
-                                                className="absolute top-3 right-3 text-xl focus:outline-none"
-                                                onClick={() => toggleFavourite(food)}
+                                                className="absolute top-3 right-3 text-xl focus:outline-none z-10"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    toggleFavourite(food);
+                                                }}
                                             >
                                                 <FaHeart
                                                     className={`text-2xl ${
@@ -483,14 +500,20 @@ const Menu = () => {
                                         <div className="flex items-center justify-between mt-3">
                                             <div className="flex items-center border rounded px-2 py-1">
                                                 <button
-                                                    onClick={() => handleChange(food.id, -1)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleChange(food.id, -1);
+                                                    }}
                                                     className="px-2 text-xl"
                                                 >
                                                     −
                                                 </button>
                                                 <span className="px-3">{quantities[food.id] || 0}</span>
                                                 <button
-                                                    onClick={() => handleChange(food.id, 1)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleChange(food.id, 1);
+                                                    }}
                                                     className="px-2 text-xl"
                                                 >
                                                     +
@@ -498,7 +521,10 @@ const Menu = () => {
                                             </div>
                                             <button
                                                 disabled={(quantities[food.id] || 0) === 0 || !userId}
-                                                onClick={() => handleAddToCart(food)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleAddToCart(food);
+                                                }}
                                                 className={`text-sm px-4 py-1 rounded transition duration-300 ${
                                                     (quantities[food.id] || 0) === 0 || !userId
                                                         ? "bg-gray-300 text-gray-600 cursor-not-allowed"
@@ -532,13 +558,17 @@ const Menu = () => {
                                     ) => (
                                         <div
                                             key={food.id} // Use food.id as key
-                                            className="border rounded-xl shadow p-4 bg-white flex flex-col justify-between min-h-[400px] relative" // Added relative positioning
+                                            className="border rounded-xl shadow p-4 bg-white flex flex-col justify-between min-h-[400px] relative cursor-pointer hover:shadow-lg transition-shadow" // Added relative positioning
+                                            onClick={() => navigate(`/food/${food._id || food.id}`)}
                                         >
                                             {/* Favourite Icon */}
                                             {userId && ( // Only show if user is logged in
                                                 <button
-                                                    className="absolute top-3 right-3 text-xl focus:outline-none"
-                                                    onClick={() => toggleFavourite(food)}
+                                                    className="absolute top-3 right-3 text-xl focus:outline-none z-10"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        toggleFavourite(food);
+                                                    }}
                                                 >
                                                     <FaHeart
                                                         className={`text-2xl ${
@@ -566,7 +596,10 @@ const Menu = () => {
                                             <div className="flex items-center justify-between mt-3">
                                                 <div className="flex items-center border rounded px-2 py-1">
                                                     <button
-                                                        onClick={() => handleChange(food.id, -1)}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleChange(food.id, -1);
+                                                        }}
                                                         className="px-2 text-xl"
                                                     >
                                                         −
@@ -575,7 +608,10 @@ const Menu = () => {
                                                     <span className="px-3">{quantities[food.id] || 0}</span>{" "}
                                                     {/* Use quantities object */}
                                                     <button
-                                                        onClick={() => handleChange(food.id, 1)}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleChange(food.id, 1);
+                                                        }}
                                                         className="px-2 text-xl"
                                                     >
                                                         +
@@ -584,7 +620,10 @@ const Menu = () => {
                                                 </div>
                                                 <button
                                                     disabled={(quantities[food.id] || 0) === 0 || !userId} // Disable if quantity is 0 or not logged in
-                                                    onClick={() => handleAddToCart(food)} // Pass the food object
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleAddToCart(food);
+                                                    }} // Pass the food object
                                                     className={`text-sm px-4 py-1 rounded transition duration-300 ${
                                                         (quantities[food.id] || 0) === 0 || !userId
                                                             ? "bg-gray-300 text-gray-600 cursor-not-allowed"

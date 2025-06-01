@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 import Homepage from "./pages/Homepage";
 import Menu from "./pages/Menu";
+import FoodDetail from "./pages/FoodDetail";
 import Promotions from "./pages/Promotions";
 import Bestsellers from "./pages/Bestsellers";
 import Notifications from "./pages/Notifications";
@@ -35,6 +36,7 @@ const App = () => {
                 <Route path="/" element={<Layout />}>
                     <Route index element={<Homepage />} />
                     <Route path="menu" element={<Menu />} />
+                    <Route path="food/:foodId" element={<FoodDetail />} />
                     <Route path="promotions" element={<Promotions />} />
                     <Route path="bestsellers" element={<Bestsellers />} />
                     <Route path="notifications" element={<Notifications />} />

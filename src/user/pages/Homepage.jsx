@@ -306,7 +306,10 @@ const Homepage = () => {
                     >
                         {recommendedFoods.map((food) => (
                             <SwiperSlide key={food.id}>
-                                <div className="product-card relative">
+                                <div
+                                    className="product-card relative cursor-pointer"
+                                    onClick={() => navigate(`/food/${food._id || food.id}`)}
+                                >
                                     {/* AI Badge for recommended items */}
                                     {aiServiceAvailable && food.aiScore && (
                                         <div className="absolute top-2 left-2 z-10">
@@ -329,19 +332,31 @@ const Homepage = () => {
                                     <div className="flex justify-between items-center gap-4">
                                         <div className="quantity-control">
                                             <button
-                                                onClick={() => handleChange(food.id, -1)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleChange(food.id, -1);
+                                                }}
                                                 className="quantity-btn"
                                                 disabled={(quantities[food.id] || 0) <= 0}
                                             >
                                                 −
                                             </button>
                                             <span className="quantity-display">{quantities[food.id] || 0}</span>
-                                            <button onClick={() => handleChange(food.id, 1)} className="quantity-btn">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleChange(food.id, 1);
+                                                }}
+                                                className="quantity-btn"
+                                            >
                                                 +
                                             </button>
                                         </div>
                                         <button
-                                            onClick={() => handleAddToCart(food)}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleAddToCart(food);
+                                            }}
                                             disabled={(quantities[food.id] || 0) === 0 || !userId}
                                             className={`px-4 py-2 text-sm rounded-lg font-semibold transition-all duration-300 ${
                                                 (quantities[food.id] || 0) === 0 || !userId
