@@ -1,6 +1,12 @@
+body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 .sidebarcomponent {
   width: 250px;
-  height: 100vh;
+  min-height: 100vh;
   background-color: #fff;
   border-right: 1px solid #e5e7eb;
   display: flex;

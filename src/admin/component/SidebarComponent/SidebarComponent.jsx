@@ -101,8 +101,6 @@ const SidebarComponent = () => {
               <span>Thông tin tài khoản</span>
             </Link>
           </li>
-        </ul>
-        <ul className="subBar">
           <li className="menu-item">
             <button
               onClick={handleLogout}

@@ -18,6 +18,7 @@ import useNotification from "../hooks/useNotification";
 
 const Menu = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const [foods, setFoods] = useState([]); // State to store fetched food data
     const [loading, setLoading] = useState(true); // State to track loading status
     const [error, setError] = useState(null); // State to track any errors

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { SearchOutlined, EditOutlined } from "@ant-design/icons";
+import { SearchOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import Topbar from "../../component/TopbarComponent/TopbarComponent";
 import FooterComponent from "../../component/FooterComponent/FooterComponent";
 import "./FoodManagementPage.scss";
@@ -91,12 +91,12 @@ const FoodManagement = () => {
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setImagePreview(reader.result);
-        setNewMenuItem({ ...newMenuItem, image: reader.result });
-      };
-      reader.readAsDataURL(file);
+        const reader = new FileReader();
+        reader.onload = () => {
+            setImagePreview(reader.result);
+        };
+        reader.readAsDataURL(file);
+        setNewMenuItem({ ...newMenuItem, imageFile: file });
     }
   };
 
@@ -113,57 +113,56 @@ const FoodManagement = () => {
 
   const handleSaveNewItem = async () => {
     if (
-      !newMenuItem.name ||
-      !newMenuItem.description ||
-      !newMenuItem.image ||
-      !newMenuItem.price ||
-      !newMenuItem.category
+        !newMenuItem.name ||
+        !newMenuItem.description ||
+        !newMenuItem.imageFile ||
+        !newMenuItem.price ||
+        !newMenuItem.category
     ) {
-      alert("Vui lòng điền đầy đủ thông tin!");
-      return;
+        alert("Vui lòng điền đầy đủ thông tin!");
+        return;
     }
 
     const token = localStorage.getItem('jwtToken');
     if (!token) {
-      alert("No authentication token found. Please log in.");
-      return;
+        alert("No authentication token found. Please log in.");
+        return;
     }
 
+    const formData = new FormData();
+    formData.append('name', newMenuItem.name);
+    formData.append('description', newMenuItem.description);
+    formData.append('file', newMenuItem.imageFile);
+    formData.append('price', parseFloat(newMenuItem.price));
+    formData.append('category', newMenuItem.category);
+    formData.append('ingredients', JSON.stringify([]));
+    formData.append('available', true);
+
     try {
-      const foodData = {
-        name: newMenuItem.name,
-        description: newMenuItem.description,
-        image: newMenuItem.image,
-        price: parseFloat(newMenuItem.price),
-        category: newMenuItem.category,
-        ingredients: [],
-        available: true,
-      };
+        const response = await axios.post('http://localhost:8080/api/foods', formData, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            }
+        });
 
-      const response = await axios.post('http://localhost:8080/api/foods', foodData, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+        const createdFood = response.data;
+        setFoods([...foods, createdFood]);
 
-      const createdFood = response.data;
-      setFoods([...foods, createdFood]);
-
-      setNewMenuItem({
-        name: "",
-        description: "",
-        image: "",
-        price: "",
-        category: categories[0],
-      });
-      setImagePreview(null);
-      setIsAddModalVisible(false);
-      alert("Món ăn đã được thêm thành công!");
+        setNewMenuItem({
+            name: "",
+            description: "",
+            image: "",
+            imageFile: null,
+            price: "",
+            category: categories[0],
+        });
+        setImagePreview(null);
+        setIsAddModalVisible(false);
+        alert("Món ăn đã được thêm thành công!");
 
     } catch (err) {
-      console.error('Error adding food item:', err.response ? err.response.data : err.message);
-      alert("Failed to add food item. Please try again.");
+        console.error('Error adding food item:', err.response ? err.response.data : err.message);
+        alert("Failed to add food item. Please try again.");
     }
   };
 
@@ -251,6 +250,34 @@ const FoodManagement = () => {
     setEditMenuItem(null);
   };
 
+  const handleDeleteItem = async (itemId) => {
+    // Hỏi người dùng xác nhận trước khi xóa
+    if (window.confirm("Bạn có chắc chắn muốn xóa món ăn này không?")) {
+      const token = localStorage.getItem('jwtToken');
+      if (!token) {
+        alert("No authentication token found. Please log in.");
+        return;
+      }
+
+      try {
+        // Gọi API DELETE để xóa món ăn
+        await axios.delete(`http://localhost:8080/api/foods/${itemId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        // Cập nhật lại danh sách món ăn bằng cách lọc bỏ món đã xóa
+        setFoods(foods.filter(food => food._id !== itemId));
+        alert("Món ăn đã được xóa thành công!");
+
+      } catch (err) {
+        console.error('Error deleting food item:', err.response ? err.response.data : err.message);
+        alert("Failed to delete food item. Please try again.");
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="food-container">
@@ -323,12 +350,20 @@ const FoodManagement = () => {
                   </div>
                   <p className="item-description">{item.description}</p>
                 </div>
-                <button
-                  className="edit-button"
-                  onClick={() => handleEditButtonClick(item)}
-                >
-                  <EditOutlined /> Sửa món ăn
-                </button>
+                <div className="item-actions">
+                  <button
+                    className="edit-button"
+                    onClick={() => handleEditButtonClick(item)}
+                  >
+                    <EditOutlined /> Sửa món ăn
+                  </button>
+                  <button
+                    className="delete-button"
+                    onClick={() => handleDeleteItem(item._id)}
+                  >
+                    <DeleteOutlined /> Xóa
+                  </button>
+                </div>
               </div>
             ))}
           </div>

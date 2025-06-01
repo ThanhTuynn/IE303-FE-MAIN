@@ -49,35 +49,42 @@ const Promotions = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        console.log("Fetching promotions...");
         // Fetch promotions
         const promotionsResponse = await axios.get('http://localhost:8080/api/promotions', {
              headers: {
                 'Authorization': `Bearer ${token}` // Include the JWT token
               }
         });
+        console.log("Promotions response:", promotionsResponse.data);
         setPromotions(promotionsResponse.data);
 
+        console.log("Fetching foods...");
         // Fetch all foods
         const foodsResponse = await axios.get('http://localhost:8080/api/foods');
         const allFoods = foodsResponse.data;
+        console.log("Foods response:", allFoods);
         setFoods(allFoods);
 
         // Group foods by promotion
         const groupedFoods = {};
         promotionsResponse.data.forEach(promotion => {
+            console.log("Processing promotion:", promotion);
             const applicableFoods = allFoods.filter(food =>
                 promotion.applicableFoodIds && promotion.applicableFoodIds.includes(food.id.toString())
             );
+            console.log("Applicable foods for promotion:", applicableFoods);
             if (applicableFoods.length > 0) {
-                 groupedFoods[promotion.name] = { // Use promotion name as the group key
-                     icon: getCategoryIcon(promotion.name), // Reusing category icons based on promotion name, adjust as needed
-                     items: applicableFoods.map(food => ({ ...food, promotionDetails: promotion })) // Add promotion details to food item
+                 groupedFoods[promotion.name] = {
+                     icon: getCategoryIcon(promotion.name),
+                     items: applicableFoods.map(food => ({ ...food, promotionDetails: promotion }))
                  };
             }
         });
-         setPromotionalFoods(groupedFoods);
+        console.log("Grouped foods:", groupedFoods);
+        setPromotionalFoods(groupedFoods);
 
-         // Initialize quantities state based on fetched foods
+        // Initialize quantities state based on fetched foods
         const initialQuantities = {};
         allFoods.forEach(food => {
             initialQuantities[food.id] = 0;
@@ -86,15 +93,19 @@ const Promotions = () => {
 
         setLoading(false);
       } catch (err) {
+        console.error("Error fetching data:", err);
+        console.error("Error details:", err.response?.data);
         setError(err);
         setLoading(false);
-        console.error("Error fetching data:", err);
-        alert("Failed to fetch promotions or food data.");
+        alert("Failed to fetch promotions or food data. Please check console for details.");
       }
     };
 
      if (userId) { // Only fetch if userId is available
+       console.log("User ID available, fetching data...");
        fetchData();
+     } else {
+       console.log("No user ID available, skipping data fetch");
      }
 
   }, [userId, navigate]); // Rerun effect if userId or navigate changes

@@ -375,20 +375,22 @@ const PromotionManagement = () => {
                    <h4>Các món áp dụng:</h4>
                    <div className="applicable-foods-grid">
                        {findFoodsByIds(promotion.applicableFoodIds).map(food => (
-                           <div key={food.id} className="food-item-small">
-                                <img src={food.image} alt={food.name} />
-                                <p>{food.name}</p>
-                                <p className="original-price">{food.price.toLocaleString()} VND</p>
-                                {promotion.type === "PERCENTAGE" && (
-                                  <p className="discount-price">
-                                    {(food.price * (1 - promotion.value / 100)).toLocaleString()} VND
-                                  </p>
-                                )}
-                                {promotion.type === "FIXED_AMOUNT" && (
-                                  <p className="discount-price">
-                                    {Math.max(0, food.price - promotion.value).toLocaleString()} VND
-                                  </p>
-                                )}
+                           <div key={food.id} className="food-item-small"> {/* This will be styled like .menu-item */}
+                                <img src={food.image} alt={food.name} className="applicable-food-image" /> {/* Add specific class */}
+                                <div className="item-info"> {/* Equivalent to .item-info in FoodManagementPage */}
+                                  <h3 className="item-name">{food.name}</h3> {/* Use h3 for consistency */}
+                                  <p className="original-price">{food.price.toLocaleString()} VND</p>
+                                  {promotion.type === "PERCENTAGE" && (
+                                    <p className="discount-price">
+                                      {(food.price * (1 - promotion.value / 100)).toLocaleString()} VND
+                                    </p>
+                                  )}
+                                  {promotion.type === "FIXED_AMOUNT" && (
+                                    <p className="discount-price">
+                                      {Math.max(0, food.price - promotion.value).toLocaleString()} VND
+                                    </p>
+                                  )}
+                                </div>
                            </div>
                        ))}
                         {findFoodsByIds(promotion.applicableFoodIds).length === 0 && (

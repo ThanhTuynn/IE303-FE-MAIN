@@ -31,10 +31,10 @@ const ProtectedRoute = ({ element: Element, requiredRole, ...rest }) => {
   // If authenticated, check if a specific role is required and if it matches the user's role
   if (requiredRole) {
     const isAdminRoute = requiredRole === 'admin';
-    const hasAdminRole = userRole === 'quản lý cửa hàng';
+    const hasAdminRole = userRole === 'ADMIN';
 
     if (isAdminRoute && !hasAdminRole) {
-      // If required role is admin but user does not have 'quản lý cửa hàng' role
+      // If required role is admin but user does not have 'ADMIN' role
       console.warn(`Unauthorized access attempt: User role is '${userRole}', but required role is '${requiredRole}'`);
       // TODO: Consider creating a dedicated Unauthorized page
       return <Navigate to="/" replace />; // Redirect to home for now
