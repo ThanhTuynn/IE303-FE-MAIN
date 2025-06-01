@@ -4,6 +4,7 @@ import { Navigation, Autoplay } from "swiper/modules";
 import { useNavigate } from "react-router-dom";
 import axios from "axios"; // Import axios for API calls
 import aiRecommendationService from "../services/aiRecommendationService"; // Import AI service
+import { toast } from "../components/Toast";
 
 const Homepage = () => {
     const [quantities, setQuantities] = useState({}); // Change to object to store quantities by food ID
@@ -129,7 +130,7 @@ const Homepage = () => {
         const token = localStorage.getItem("jwtToken"); // Get JWT token from localStorage
 
         if (!token) {
-            alert("Please log in to add items to your cart.");
+            toast.warning("Vui lòng đăng nhập để thêm vào giỏ hàng!");
             navigate("/login");
             return; // Stop if not logged in
         }
@@ -151,7 +152,7 @@ const Homepage = () => {
                     },
                 });
                 console.log("Item added to cart:", response.data);
-                alert(`Đã thêm ${quantity} ${food.name} vào giỏ hàng!`);
+                toast.success(`Đã thêm ${quantity} ${food.name} vào giỏ hàng!`);
 
                 // Optionally reset the quantity counter after adding to cart
                 setQuantities((prev) => ({ ...prev, [food.id]: 0 }));
@@ -160,13 +161,13 @@ const Homepage = () => {
                 window.dispatchEvent(new Event("cartUpdated"));
             } catch (err) {
                 console.error("Error adding item to cart:", err);
-                alert("Failed to add item to cart.");
+                toast.error("Có lỗi xảy ra khi thêm vào giỏ hàng!");
             }
         } else if (quantity === 0) {
-            alert("Please select a quantity greater than 0.");
+            toast.warning("Vui lòng chọn số lượng lớn hơn 0!");
         } else if (!userId) {
             // This case is now handled by the initial token check
-            alert("Please log in to add items to your cart.");
+            toast.warning("Vui lòng đăng nhập để thêm vào giỏ hàng!");
             navigate("/login");
         }
     };

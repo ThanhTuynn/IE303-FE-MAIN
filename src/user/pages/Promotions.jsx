@@ -1,328 +1,577 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
-  FaBreadSlice,
-  FaUtensils,
-  FaConciergeBell,
-  FaDrumstickBite,
-  FaHamburger,
-  FaCoffee,
-  FaSearch,
-  FaHeart
-} from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios'; // Import axios
+    FaBreadSlice,
+    FaUtensils,
+    FaConciergeBell,
+    FaDrumstickBite,
+    FaHamburger,
+    FaCoffee,
+    FaSearch,
+    FaHeart,
+    FaMinus,
+    FaPlus,
+    FaShoppingCart,
+    FaEye,
+} from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import axios from "axios"; // Import axios
+import { toast } from "../components/Toast";
 
 const Promotions = () => {
-  const navigate = useNavigate();
-  const [promotions, setPromotions] = useState([]); // State to store fetched promotions
-  const [foods, setFoods] = useState([]); // State to store all fetched food data
-  const [promotionalFoods, setPromotionalFoods] = useState({}); // State to store foods grouped by promotion
-  const [loading, setLoading] = useState(true); // State to track loading status
-  const [error, setError] = useState(null); // State to track any errors
-  const [quantities, setQuantities] = useState({}); // Use object to store quantities by food ID
-  const [search, setSearch] = useState('');
-  const [userId, setUserId] = useState(null); // State to store the user ID
+    const navigate = useNavigate();
+    const [promotions, setPromotions] = useState([]); // State to store fetched promotions
+    const [foods, setFoods] = useState([]); // State to store all fetched food data
+    const [promotionalFoods, setPromotionalFoods] = useState({}); // State to store foods grouped by promotion
+    const [loading, setLoading] = useState(true); // State to track loading status
+    const [error, setError] = useState(null); // State to track any errors
+    const [quantities, setQuantities] = useState({}); // Use object to store quantities by food ID
+    const [search, setSearch] = useState("");
+    const [userId, setUserId] = useState(null); // State to store the user ID
+    const [favoriteFoodIds, setFavoriteFoodIds] = useState(new Set()); // State to store favorite food IDs
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [promotionFoods, setPromotionFoods] = useState([]);
 
-  useEffect(() => {
-    const token = localStorage.getItem('jwtToken');
-    const userData = localStorage.getItem('userData');
+    useEffect(() => {
+        const token = localStorage.getItem("jwtToken");
+        setIsLoggedIn(!!token);
 
-    if (!token || !userData) {
-      alert("Please log in to view promotions and add items to your cart.");
-      navigate('/login');
-      return;
-    }
+        const userData = localStorage.getItem("userData");
+        if (userData) {
+            try {
+                const user = JSON.parse(userData);
+                setUserId(user.id || user._id);
+            } catch (e) {
+                console.error("Failed to parse user data:", e);
+            }
+        }
 
-     if (userData) {
+        fetchPromotionFoods();
+    }, []);
+
+    const fetchPromotionFoods = async () => {
+        try {
+            // Fetch all foods and filter for promotion items (you can modify this logic)
+            const response = await axios.get("http://localhost:8080/api/foods");
+            // For demo, let's say foods with price < 30000 are on promotion
+            const promoFoods = response.data.filter((food) => food.price < 30000);
+            setPromotionFoods(promoFoods);
+
+            // Initialize quantities
+            const initialQuantities = {};
+            promoFoods.forEach((food) => {
+                initialQuantities[food.id] = 0;
+            });
+            setQuantities(initialQuantities);
+        } catch (err) {
+            setError(err.message);
+            console.error("Error fetching promotion foods:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        const token = localStorage.getItem("jwtToken");
+        const userData = localStorage.getItem("userData");
+
+        if (!token || !userData) {
+            toast.warning("Vui lòng đăng nhập để xem khuyến mãi và thêm vào giỏ hàng.");
+            navigate("/login");
+            return;
+        }
+
+        if (userData) {
             try {
                 const user = JSON.parse(userData);
                 setUserId(user.id); // Assuming user ID is stored as 'id'
             } catch (e) {
                 console.error("Failed to parse user data from localStorage:", e);
-                 alert("Error retrieving user data. Please log in again.");
-                 navigate('/login');
-                 return;
+                toast.error("Lỗi xử lý dữ liệu người dùng. Vui lòng đăng nhập lại.");
+                navigate("/login");
+                return;
             }
         }
 
-    // Fetch promotions and food data from the backend
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        // Fetch promotions
-        const promotionsResponse = await axios.get('http://localhost:8080/api/promotions', {
-             headers: {
-                'Authorization': `Bearer ${token}` // Include the JWT token
-              }
-        });
-        setPromotions(promotionsResponse.data);
-
-        // Fetch all foods
-        const foodsResponse = await axios.get('http://localhost:8080/api/foods');
-        const allFoods = foodsResponse.data;
-        setFoods(allFoods);
-
-        // Group foods by promotion
-        const groupedFoods = {};
-        promotionsResponse.data.forEach(promotion => {
-            const applicableFoods = allFoods.filter(food =>
-                promotion.applicableFoodIds && promotion.applicableFoodIds.includes(food.id.toString())
-            );
-            if (applicableFoods.length > 0) {
-                 groupedFoods[promotion.name] = { // Use promotion name as the group key
-                     icon: getCategoryIcon(promotion.name), // Reusing category icons based on promotion name, adjust as needed
-                     items: applicableFoods.map(food => ({ ...food, promotionDetails: promotion })) // Add promotion details to food item
-                 };
+        // Fetch user's favorites after getting userId
+        const fetchFavorites = async (id) => {
+            try {
+                const response = await axios.get(`http://localhost:8080/api/users/${id}/favourites`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+                // Assuming the response data is an array of favorite food objects
+                const favoriteIds = new Set(response.data.map((food) => food.id));
+                setFavoriteFoodIds(favoriteIds);
+            } catch (err) {
+                console.error("Error fetching favorites:", err);
+                // Handle error, but don't block food loading
             }
-        });
-         setPromotionalFoods(groupedFoods);
+        };
 
-         // Initialize quantities state based on fetched foods
-        const initialQuantities = {};
-        allFoods.forEach(food => {
-            initialQuantities[food.id] = 0;
-        });
-        setQuantities(initialQuantities);
+        // Fetch promotions and food data from the backend
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                // Fetch promotions
+                const promotionsResponse = await axios.get("http://localhost:8080/api/promotions", {
+                    headers: {
+                        Authorization: `Bearer ${token}`, // Include the JWT token
+                    },
+                });
+                setPromotions(promotionsResponse.data);
 
-        setLoading(false);
-      } catch (err) {
-        setError(err);
-        setLoading(false);
-        console.error("Error fetching data:", err);
-        alert("Failed to fetch promotions or food data.");
-      }
+                // Fetch all foods
+                const foodsResponse = await axios.get("http://localhost:8080/api/foods");
+                const allFoods = foodsResponse.data;
+                setFoods(allFoods);
+
+                // Group foods by promotion
+                const groupedFoods = {};
+                promotionsResponse.data.forEach((promotion) => {
+                    const applicableFoods = allFoods.filter(
+                        (food) =>
+                            promotion.applicableFoodIds && promotion.applicableFoodIds.includes(food.id.toString())
+                    );
+                    if (applicableFoods.length > 0) {
+                        groupedFoods[promotion.name] = {
+                            // Use promotion name as the group key
+                            icon: getCategoryIcon(promotion.name), // Reusing category icons based on promotion name, adjust as needed
+                            items: applicableFoods.map((food) => ({ ...food, promotionDetails: promotion })), // Add promotion details to food item
+                        };
+                    }
+                });
+                setPromotionalFoods(groupedFoods);
+
+                // Initialize quantities state based on fetched foods
+                const initialQuantities = {};
+                allFoods.forEach((food) => {
+                    initialQuantities[food.id] = 0;
+                });
+                setQuantities(initialQuantities);
+
+                setLoading(false);
+            } catch (err) {
+                setError(err);
+                setLoading(false);
+                console.error("Error fetching data:", err);
+                toast.error("Không thể tải dữ liệu khuyến mãi.");
+            }
+        };
+
+        if (userId) {
+            // Only fetch if userId is available
+            fetchData();
+            fetchFavorites(userId);
+        }
+    }, [userId, navigate]); // Rerun effect if userId or navigate changes
+
+    const toggleFavourite = async (food) => {
+        const token = localStorage.getItem("jwtToken");
+        if (!token || !userId) {
+            toast.warning("Vui lòng đăng nhập để đánh dấu món ăn yêu thích.");
+            navigate("/login");
+            return;
+        }
+
+        const isCurrentlyFavorite = favoriteFoodIds.has(food.id);
+
+        try {
+            if (isCurrentlyFavorite) {
+                // Remove from favorites
+                await axios.delete(`http://localhost:8080/api/users/${userId}/favourites/${food.id}`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+                setFavoriteFoodIds((prev) => {
+                    const newState = new Set(prev);
+                    newState.delete(food.id);
+                    return newState;
+                });
+                toast.success("Đã xoá khỏi danh sách yêu thích!");
+            } else {
+                // Add to favorites
+                await axios.post(
+                    `http://localhost:8080/api/users/${userId}/favourites`,
+                    { foodId: food.id },
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json",
+                        },
+                    }
+                );
+                setFavoriteFoodIds((prev) => new Set(prev).add(food.id));
+                toast.success("Đã thêm vào danh sách yêu thích!");
+            }
+        } catch (err) {
+            console.error("Error toggling favorite status:", err);
+            toast.error("Không thể cập nhật trạng thái yêu thích.");
+        }
     };
 
-     if (userId) { // Only fetch if userId is available
-       fetchData();
-     }
-
-  }, [userId, navigate]); // Rerun effect if userId or navigate changes
-
-  const handleChange = (foodId, delta) => {
-    setQuantities(prev => {
-      const updated = { ...prev };
-      updated[foodId] = Math.max(0, (updated[foodId] || 0) + delta); // Allow quantity to be 0
-      return updated;
-    });
-  };
-
-  const handleAddToCart = async (food) => {
-      const quantity = quantities[food.id];
-      const token = localStorage.getItem('jwtToken'); // Get JWT token from localStorage
-
-      if (!token) {
-          alert("Please log in to add items to your cart.");
-          navigate('/login');
-          return; // Stop if not logged in
-      }
-
-      if (quantity > 0 && userId) {
-          try {
-              // Calculate the price to add to cart, considering promotion
-              const priceToAddToCart = food.promotionDetails
-                  ? food.price * (1 - food.promotionDetails.value / 100)
-                  : food.price;
-
-              const itemToAdd = {
-                  foodId: food.id,
-                  name: food.name,
-                  price: priceToAddToCart, // Use the calculated price
-                  quantity: quantity,
-                  imageUrl: food.image
-              };
-
-              // Make the API call to add item to cart with Authorization header
-              const response = await axios.post(
-                  `http://localhost:8080/api/carts/${userId}/items`,
-                  itemToAdd,
-                  {
-                      headers: {
-                          'Authorization': `Bearer ${token}` // Include the JWT token
-                      }
-                  }
-              );
-              console.log("Item added to cart:", response.data);
-              alert(`Đã thêm ${quantity} ${food.name} vào giỏ hàng!`);
-
-              // Optionally reset the quantity counter after adding to cart
-              setQuantities(prev => ({ ...prev, [food.id]: 0 }));
-
-          } catch (err) {
-              console.error("Error adding item to cart:", err);
-              alert("Failed to add item to cart.");
-          }
-      } else if (quantity === 0) {
-          alert("Please select a quantity greater than 0.");
-      }
-  };
-
-  const filteredFoods = foods.filter(food =>
-    food.name.toLowerCase().includes(search.toLowerCase())
-  );
-
-   const getCategoryIcon = (categoryName) => {
-    // Map backend categories/promotion names to your existing icons
-    const icons = {
-        'BÁNH MÌ': <FaBreadSlice className="text-red-600 mr-2" />,
-        'MÌ': <FaUtensils className="text-red-600 mr-2" />,
-        'XÔI': <FaConciergeBell className="text-red-600 mr-2" />,
-        'CƠM': <FaDrumstickBite className="text-red-600 mr-2" />,
-        'ĐỒ ĂN VẶT': <FaHamburger className="text-red-600 mr-2" />,
-        'ĐỒ UỐNG': <FaCoffee className="text-red-600 mr-2" />,
-        // Add more mappings for specific promotion names if needed
-        'MÓN MỚI - GIÁ HỜI': <FaHeart className="text-red-600 mr-2"/>, // Example mapping for a promotion name
-        'COMBO 1 NGƯỜI': <FaUtensils className="text-red-600 mr-2"/>,
-        'COMBO CẶP ĐÔI': <FaConciergeBell className="text-red-600 mr-2"/>,
-        'CÀNG ĐÔNG CÀNG DZUI': <FaDrumstickBite className="text-red-600 mr-2"/>
+    const handleChange = (foodId, delta) => {
+        setQuantities((prev) => {
+            const updated = { ...prev };
+            updated[foodId] = Math.max(0, (updated[foodId] || 0) + delta); // Allow quantity to be 0
+            return updated;
+        });
     };
-    return icons[categoryName] || <FaUtensils className="text-red-600 mr-2" />; // Default icon
-};
 
-  if (loading) {
-    return <div className="text-center py-8">Loading promotions...</div>; // Loading indicator
-  }
+    const handleAddToCart = async (food) => {
+        const quantity = quantities[food.id];
+        const token = localStorage.getItem("jwtToken");
 
-  if (error) {
-    return <div className="text-center py-8 text-red-600">Error loading promotions: {error.message}</div>; // Error message
-  }
+        if (!token) {
+            toast.warning("Vui lòng đăng nhập để thêm vào giỏ hàng!");
+            navigate("/login");
+            return;
+        }
 
-  return (
-    <div className="bg-white text-black font-kanit px-4 md:px-8 lg:px-16 py-10 zoom-75">
-      <div className="text-center mb-10">
-        <h1 className="text-4xl md:text-5xl font-extrabold text-red-600">DEAL CỰC CHẤT, <span className="text-black">NHẤT KHÁCH HÀNG</span></h1>
-        <p className="text-gray-700 mt-2 max-w-3xl mx-auto">
-        Chào đón bạn với những ưu đãi siêu ngọt ngào mà chỉ UniFoodie mới có! 🎉 Đặt hàng thả ga, nhận ngay giảm giá cực kỳ hấp dẫn với tốc độ giao hàng ánh sáng ✨✨
-        </p>
-        <div className="mt-6 max-w-lg mx-auto relative">
-          <input
-            type="text"
-            className="w-full py-3 pl-5 pr-12 border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500"
-            placeholder="Tìm món bạn yêu thích..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <button className="absolute right-3 top-1/2 transform -translate-y-1/2 text-red-600 hover:text-red-800">
-            <FaSearch size={18} />
-          </button>
+        if (quantity > 0 && userId) {
+            try {
+                const itemToAdd = {
+                    foodId: food.id,
+                    name: food.name,
+                    price: food.price,
+                    quantity: quantity,
+                    imageUrl: food.image,
+                };
+
+                await axios.post(`http://localhost:8080/api/carts/${userId}/items`, itemToAdd, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                toast.success(`Đã thêm ${quantity} ${food.name} vào giỏ hàng!`);
+
+                // Reset quantity
+                setQuantities((prev) => ({ ...prev, [food.id]: 0 }));
+
+                // Trigger custom event to update header cart count
+                window.dispatchEvent(new Event("cartUpdated"));
+            } catch (err) {
+                console.error("Error adding item to cart:", err);
+                toast.error("Có lỗi xảy ra khi thêm vào giỏ hàng!");
+            }
+        } else if (quantity === 0) {
+            toast.warning("Vui lòng chọn số lượng lớn hơn 0!");
+        }
+    };
+
+    const handleViewDetails = (foodId) => {
+        navigate(`/food/${foodId}`);
+    };
+
+    const filteredFoods = foods.filter((food) => food.name.toLowerCase().includes(search.toLowerCase()));
+
+    const getCategoryIcon = (categoryName) => {
+        // Map backend categories/promotion names to your existing icons
+        const icons = {
+            "BÁNH MÌ": <FaBreadSlice className="text-red-600 mr-2" />,
+            MÌ: <FaUtensils className="text-red-600 mr-2" />,
+            XÔI: <FaConciergeBell className="text-red-600 mr-2" />,
+            CƠM: <FaDrumstickBite className="text-red-600 mr-2" />,
+            "ĐỒ ĂN VẶT": <FaHamburger className="text-red-600 mr-2" />,
+            "ĐỒ UỐNG": <FaCoffee className="text-red-600 mr-2" />,
+            // Add more mappings for specific promotion names if needed
+            "MÓN MỚI - GIÁ HỜI": <FaHeart className="text-red-600 mr-2" />, // Example mapping for a promotion name
+            "COMBO 1 NGƯỜI": <FaUtensils className="text-red-600 mr-2" />,
+            "COMBO CẶP ĐÔI": <FaConciergeBell className="text-red-600 mr-2" />,
+            "CÀNG ĐÔNG CÀNG DZUI": <FaDrumstickBite className="text-red-600 mr-2" />,
+        };
+        return icons[categoryName] || <FaUtensils className="text-red-600 mr-2" />; // Default icon
+    };
+
+    if (loading) {
+        return <div className="text-center py-8">Loading promotions...</div>; // Loading indicator
+    }
+
+    if (error) {
+        return <div className="text-center py-8 text-red-600">Error loading promotions: {error.message}</div>; // Error message
+    }
+
+    return (
+        <div className="bg-white text-black font-kanit px-4 md:px-8 lg:px-16 py-10 zoom-75">
+            <div className="text-center mb-10">
+                <h1 className="text-4xl md:text-5xl font-extrabold text-red-600">
+                    DEAL CỰC CHẤT, <span className="text-black">NHẤT KHÁCH HÀNG</span>
+                </h1>
+                <p className="text-gray-700 mt-2 max-w-3xl mx-auto">
+                    Chào đón bạn với những ưu đãi siêu ngọt ngào mà chỉ UniFoodie mới có! 🎉 Đặt hàng thả ga, nhận ngay
+                    giảm giá cực kỳ hấp dẫn với tốc độ giao hàng ánh sáng ✨✨
+                </p>
+                <div className="mt-6 max-w-lg mx-auto relative">
+                    <input
+                        type="text"
+                        className="w-full py-3 pl-5 pr-12 border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                        placeholder="Tìm món bạn yêu thích..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                    />
+                    <button className="absolute right-3 top-1/2 transform -translate-y-1/2 text-red-600 hover:text-red-800">
+                        <FaSearch size={18} />
+                    </button>
+                </div>
+            </div>
+
+            {search.trim() ? (
+                <section className="mb-12">
+                    <h2 className="text-2xl md:text-1xl font-bold mb-6 flex items-center">
+                        <FaSearch className="text-red-600 mr-2" />
+                        <span className="text-red-600">Kết quả tìm kiếm</span>
+                    </h2>
+                    {filteredFoods.length === 0 ? (
+                        <p className="text-gray-600">Không tìm thấy món nào phù hợp.</p>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {filteredFoods.map((food) => (
+                                <div
+                                    key={food.id}
+                                    className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+                                    onClick={() => handleViewDetails(food._id || food.id)}
+                                >
+                                    <div className="relative">
+                                        {/* Favourite Icon */}
+                                        {userId && (
+                                            <button
+                                                className="absolute top-3 right-3 text-2xl focus:outline-none z-10"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    toggleFavourite(food);
+                                                }}
+                                            >
+                                                <FaHeart
+                                                    className={`text-2xl ${
+                                                        favoriteFoodIds.has(food.id)
+                                                            ? "text-red-600"
+                                                            : "text-white drop-shadow-lg hover:text-red-400"
+                                                    } transition-colors`}
+                                                />
+                                            </button>
+                                        )}
+                                        <img src={food.image} alt={food.name} className="w-full h-48 object-cover" />
+                                    </div>
+
+                                    <div className="p-4">
+                                        <h3 className="font-bold text-lg text-gray-800 mb-2 line-clamp-1">
+                                            {food.name}
+                                        </h3>
+
+                                        {/* Price section with promotion handling */}
+                                        {food.promotionDetails ? (
+                                            <div className="mb-3">
+                                                <div className="flex items-center">
+                                                    <span className="text-gray-500 text-sm line-through mr-2">
+                                                        {food.price.toLocaleString("vi-VN")}đ
+                                                    </span>
+                                                    <span className="text-red-600 font-bold text-xl">
+                                                        {(
+                                                            food.price *
+                                                            (1 - food.promotionDetails.value / 100)
+                                                        ).toLocaleString("vi-VN")}
+                                                        đ
+                                                    </span>
+                                                </div>
+                                                <p className="text-green-600 font-bold text-sm mt-1">
+                                                    Giảm {food.promotionDetails.value}%
+                                                </p>
+                                                {food.promotionDetails.startDate && food.promotionDetails.endDate && (
+                                                    <p className="text-xs text-gray-500 mt-1">
+                                                        Áp dụng từ{" "}
+                                                        {new Date(food.promotionDetails.startDate).toLocaleDateString()}{" "}
+                                                        đến{" "}
+                                                        {new Date(food.promotionDetails.endDate).toLocaleDateString()}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <p className="text-red-600 font-bold text-xl mb-3">
+                                                {food.price.toLocaleString("vi-VN")}đ
+                                            </p>
+                                        )}
+
+                                        <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">
+                                            {food.description}
+                                        </p>
+
+                                        {/* Action Row */}
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center border-2 border-gray-200 rounded-lg bg-white">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleChange(food.id, -1);
+                                                    }}
+                                                    className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-l-lg transition-colors"
+                                                    disabled={(quantities[food.id] || 0) <= 0}
+                                                >
+                                                    <FaMinus size={12} />
+                                                </button>
+                                                <span className="w-12 h-8 flex items-center justify-center text-gray-800 font-semibold bg-gray-50">
+                                                    {quantities[food.id] || 0}
+                                                </span>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleChange(food.id, 1);
+                                                    }}
+                                                    className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-r-lg transition-colors"
+                                                >
+                                                    <FaPlus size={12} />
+                                                </button>
+                                            </div>
+                                            <button
+                                                disabled={(quantities[food.id] || 0) === 0 || !userId}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleAddToCart(food);
+                                                }}
+                                                className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                                                    (quantities[food.id] || 0) === 0 || !userId
+                                                        ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                                        : "bg-red-600 text-white hover:bg-red-700 shadow-md hover:shadow-lg"
+                                                }`}
+                                            >
+                                                Thêm vào giỏ
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </section>
+            ) : (
+                Object.entries(promotionalFoods).map(([promotionName, { icon, items }]) => (
+                    <section key={promotionName} className="mb-12">
+                        <h2 className="text-3xl md:text-4xl font-bold mb-6 flex items-center">
+                            {icon}
+                            <span className="text-red-600">{promotionName}</span>
+                        </h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {items.map((food) => (
+                                <div
+                                    key={food.id}
+                                    className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+                                    onClick={() => handleViewDetails(food._id || food.id)}
+                                >
+                                    <div className="relative">
+                                        {/* Favourite Icon */}
+                                        {userId && (
+                                            <button
+                                                className="absolute top-3 right-3 text-2xl focus:outline-none z-10"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    toggleFavourite(food);
+                                                }}
+                                            >
+                                                <FaHeart
+                                                    className={`text-2xl ${
+                                                        favoriteFoodIds.has(food.id)
+                                                            ? "text-red-600"
+                                                            : "text-white drop-shadow-lg hover:text-red-400"
+                                                    } transition-colors`}
+                                                />
+                                            </button>
+                                        )}
+                                        <img src={food.image} alt={food.name} className="w-full h-48 object-cover" />
+                                    </div>
+
+                                    <div className="p-4">
+                                        <h3 className="font-bold text-lg text-gray-800 mb-2 line-clamp-1">
+                                            {food.name}
+                                        </h3>
+
+                                        {/* Price section with promotion handling */}
+                                        {food.promotionDetails ? (
+                                            <div className="mb-3">
+                                                <div className="flex items-center">
+                                                    <span className="text-gray-500 text-sm line-through mr-2">
+                                                        {food.price.toLocaleString("vi-VN")}đ
+                                                    </span>
+                                                    <span className="text-red-600 font-bold text-xl">
+                                                        {(
+                                                            food.price *
+                                                            (1 - food.promotionDetails.value / 100)
+                                                        ).toLocaleString("vi-VN")}
+                                                        đ
+                                                    </span>
+                                                </div>
+                                                <p className="text-green-600 font-bold text-sm mt-1">
+                                                    Giảm {food.promotionDetails.value}%
+                                                </p>
+                                                {food.promotionDetails.startDate && food.promotionDetails.endDate && (
+                                                    <p className="text-xs text-gray-500 mt-1">
+                                                        Áp dụng từ{" "}
+                                                        {new Date(food.promotionDetails.startDate).toLocaleDateString()}{" "}
+                                                        đến{" "}
+                                                        {new Date(food.promotionDetails.endDate).toLocaleDateString()}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <p className="text-red-600 font-bold text-xl mb-3">
+                                                {food.price.toLocaleString("vi-VN")}đ
+                                            </p>
+                                        )}
+
+                                        <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">
+                                            {food.description}
+                                        </p>
+
+                                        {/* Action Row */}
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center border-2 border-gray-200 rounded-lg bg-white">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleChange(food.id, -1);
+                                                    }}
+                                                    className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-l-lg transition-colors"
+                                                    disabled={(quantities[food.id] || 0) <= 0}
+                                                >
+                                                    <FaMinus size={12} />
+                                                </button>
+                                                <span className="w-12 h-8 flex items-center justify-center text-gray-800 font-semibold bg-gray-50">
+                                                    {quantities[food.id] || 0}
+                                                </span>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleChange(food.id, 1);
+                                                    }}
+                                                    className="w-8 h-8 flex items-center justify-center text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-r-lg transition-colors"
+                                                >
+                                                    <FaPlus size={12} />
+                                                </button>
+                                            </div>
+                                            <button
+                                                disabled={(quantities[food.id] || 0) === 0 || !userId}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleAddToCart(food);
+                                                }}
+                                                className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                                                    (quantities[food.id] || 0) === 0 || !userId
+                                                        ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                                        : "bg-red-600 text-white hover:bg-red-700 shadow-md hover:shadow-lg"
+                                                }`}
+                                            >
+                                                Thêm vào giỏ
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                ))
+            )}
         </div>
-      </div>
-
-      {search.trim() ? (
-        <section className="mb-12">
-          <h2 className="text-2xl md:text-1xl font-bold mb-6 flex items-center">
-            <FaSearch className="text-red-600 mr-2" />
-            <span className="text-red-600">Kết quả tìm kiếm</span>
-          </h2>
-          {filteredFoods.length === 0 ? (
-            <p className="text-gray-600">Không tìm thấy món nào phù hợp.</p>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredFoods.map((food) => (
-                <div
-                  key={food.id}
-                  className="border rounded-xl shadow p-4 bg-white flex flex-col justify-between min-h-[400px]"
-                >
-                  <img src={food.image} alt={food.name} className="w-full h-48 object-cover rounded-md mb-3" />
-                  <h3 className="font-semibold text-lg">{food.name}</h3>
-                  {food.promotionDetails ? (
-                      <div className="flex items-center mt-1">
-                          {/* Giá gốc gạch ngang */}
-                          <span className="text-gray-500 text-sm line-through mr-2">{food.price.toLocaleString('vi-VN')}đ</span>
-                          {/* Giá sau khuyến mãi */}
-                          <span className="text-red-600 font-bold">{(food.price * (1 - food.promotionDetails.value / 100)).toLocaleString('vi-VN')}đ</span>
-                      </div>
-                  ) : (
-                      <p className="text-red-600 font-bold mt-1">{food.price.toLocaleString('vi-VN')}đ</p>
-                  )}
-                  {/* Display promotion dates */}
-                  {food.promotionDetails && food.promotionDetails.startDate && food.promotionDetails.endDate && (
-                      <p className="text-xs text-gray-500 mt-1 mb-8">{`Áp dụng từ ${new Date(food.promotionDetails.startDate).toLocaleDateString()} đến ${new Date(food.promotionDetails.endDate).toLocaleDateString()}`}</p>
-                  )}
-                  <p className="text-sm text-gray-600 mb-3 line-clamp-4 overflow-hidden">{food.description}</p>
-                  <div className="flex items-center justify-between mt-3">
-                    <div className="flex items-center border rounded px-2 py-1">
-                      <button onClick={() => handleChange(food.id, -1)} className="px-2 text-xl">−</button>
-                      <span className="px-3">{quantities[food.id] || 0}</span>
-                      <button onClick={() => handleChange(food.id, 1)} className="px-2 text-xl">+</button>
-                    </div>
-                    <button
-                      disabled={(quantities[food.id] || 0) === 0 || !userId}
-                      onClick={() => handleAddToCart(food)}
-                      className={`text-sm px-4 py-1 rounded transition duration-300 ${
-                        (quantities[food.id] || 0) === 0 || !userId
-                          ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
-                          : 'bg-red-600 text-white hover:bg-red-700'
-                      }`}
-                    >
-                      Thêm vào giỏ
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      ) : (
-        Object.entries(promotionalFoods).map(([promotionName, { icon, items }]) => (
-          <section key={promotionName} className="mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6 flex items-center">
-              {icon}
-              <span className="text-red-600">{promotionName}</span>
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {items.map((food) => (
-                <div
-                  key={food.id}
-                  className="border rounded-xl shadow p-4 bg-white flex flex-col justify-between min-h-[400px]"
-                >
-                  <img src={food.image} alt={food.name} className="w-full h-48 object-cover rounded-md mb-3" />
-                  <h3 className="font-semibold text-lg">{food.name}</h3>
-                  {food.promotionDetails ? (
-                      <div className="flex items-center mt-1">
-                          {/* Giá gốc gạch ngang */}
-                          <span className="text-gray-500 text-sm line-through mr-2">{food.price.toLocaleString('vi-VN')}đ</span>
-                          {/* Giá sau khuyến mãi */}
-                          <span className="text-red-600 font-bold">{(food.price * (1 - food.promotionDetails.value / 100)).toLocaleString('vi-VN')}đ</span>
-                      </div>
-                  ) : (
-                      <p className="text-red-600 font-bold mt-1">{food.price.toLocaleString('vi-VN')}đ</p>
-                  )}
-                  {/* Display promotion dates */}
-                  {food.promotionDetails && food.promotionDetails.startDate && food.promotionDetails.endDate && (
-                      <p className="text-xs text-gray-500 mt-1">{`Áp dụng từ ${new Date(food.promotionDetails.startDate).toLocaleDateString()} đến ${new Date(food.promotionDetails.endDate).toLocaleDateString()}`}</p>
-                  )}
-                  <p className="text-sm text-gray-600 mb-3 line-clamp-4 overflow-hidden">{food.description}</p>
-                   {/* Display promotion details if available */}
-                   {food.promotionDetails && (
-                       <p className="text-sm text-green-600 font-bold mt-1">{`Giảm ${food.promotionDetails.value}%`}</p>
-                   )}
-                  <div className="flex items-center justify-between mt-3">
-                    <div className="flex items-center border rounded px-2 py-1">
-                      <button onClick={() => handleChange(food.id, -1)} className="px-2 text-xl">−</button>
-                      <span className="px-3">{quantities[food.id] || 0}</span>
-                      <button onClick={() => handleChange(food.id, 1)} className="px-2 text-xl">+</button>
-                    </div>
-                    <button
-                       disabled={(quantities[food.id] || 0) === 0 || !userId}
-                       onClick={() => handleAddToCart(food)} // Pass the food object
-                       className={`text-sm px-4 py-1 rounded transition duration-300 ${
-                         (quantities[food.id] || 0) === 0 || !userId
-                           ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
-                           : 'bg-red-600 text-white hover:bg-red-700'
-                       }`}
-                    >
-                      Thêm vào giỏ
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        ))
-      )}
-    </div>
-  );
+    );
 };
 
 export default Promotions;

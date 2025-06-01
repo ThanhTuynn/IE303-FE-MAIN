@@ -14,6 +14,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import axios from "axios"; // Import axios
 import aiRecommendationService from "../services/aiRecommendationService"; // Import AI service
+import { toast } from "../components/Toast";
 
 const Menu = () => {
     const navigate = useNavigate();
@@ -48,7 +49,7 @@ const Menu = () => {
             } catch (e) {
                 console.error("Failed to parse user data from localStorage:", e);
                 // Handle error, maybe clear local storage and ask to login again
-                alert("Error retrieving user data. Please log in again.");
+                toast.error("Lỗi xử lý dữ liệu người dùng. Vui lòng đăng nhập lại.");
                 navigate("/login"); // Redirect to login on data parse error
                 setLoading(false); // Stop loading on error
                 return; // Exit useEffect if user data is invalid
@@ -92,7 +93,7 @@ const Menu = () => {
                 setError(err);
                 setLoading(false);
                 console.error("Error fetching foods:", err);
-                alert("Failed to fetch food data."); // Alert user about the error
+                toast.error("Không thể tải danh sách món ăn. Vui lòng thử lại.");
             }
         };
 
@@ -102,7 +103,7 @@ const Menu = () => {
     const toggleFavourite = async (food) => {
         const token = localStorage.getItem("jwtToken");
         if (!token || !userId) {
-            alert("Please log in to mark items as favourites.");
+            toast.warning("Vui lòng đăng nhập để thêm vào yêu thích!");
             navigate("/login");
             return;
         }
@@ -128,7 +129,7 @@ const Menu = () => {
                     newState.delete(food.id);
                     return newState;
                 });
-                alert("Đã xoá khỏi danh sách yêu thích!");
+                toast.success("Đã xóa khỏi danh sách yêu thích!");
             } else {
                 // Add to favorites
                 console.log("Attempting to add to favorites...");
@@ -143,11 +144,11 @@ const Menu = () => {
                     }
                 );
                 setFavoriteFoodIds((prev) => new Set(prev).add(food.id));
-                alert("Đã thêm vào danh sách yêu thích!");
+                toast.success("Đã thêm vào danh sách yêu thích!");
             }
         } catch (err) {
             console.error("Error toggling favorite status:", err);
-            alert("Failed to update favourite status.");
+            toast.error("Có lỗi xảy ra khi cập nhật yêu thích!");
         }
     };
 
@@ -164,7 +165,7 @@ const Menu = () => {
         const token = localStorage.getItem("jwtToken");
 
         if (!token || !userId) {
-            alert("Please log in to add items to your cart.");
+            toast.warning("Vui lòng đăng nhập để thêm vào giỏ hàng!");
             navigate("/login");
             return;
         }
@@ -179,13 +180,13 @@ const Menu = () => {
                     imageUrl: food.image,
                 };
 
-                const response = await axios.post(`http://localhost:8080/api/carts/${userId}/items`, itemToAdd, {
+                await axios.post(`http://localhost:8080/api/carts/${userId}/items`, itemToAdd, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
                 });
-                console.log("Item added to cart:", response.data);
-                alert(`Đã thêm ${quantity} ${food.name} vào giỏ hàng!`);
+
+                toast.success(`Đã thêm ${quantity} ${food.name} vào giỏ hàng!`);
 
                 setQuantities((prev) => ({ ...prev, [food.id]: 0 }));
 
@@ -193,10 +194,10 @@ const Menu = () => {
                 window.dispatchEvent(new Event("cartUpdated"));
             } catch (err) {
                 console.error("Error adding item to cart:", err);
-                alert("Failed to add item to cart.");
+                toast.error("Có lỗi xảy ra khi thêm vào giỏ hàng!");
             }
         } else if (quantity === 0) {
-            alert("Please select a quantity greater than 0.");
+            toast.warning("Vui lòng chọn số lượng lớn hơn 0!");
         }
     };
 

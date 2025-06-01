@@ -10,9 +10,12 @@ import {
     FaCoffee,
     FaMinus,
     FaPlus,
+    FaTrash,
+    FaShoppingCart,
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { toast } from "../components/Toast";
 
 const Favourite = () => {
     const navigate = useNavigate();
@@ -29,17 +32,17 @@ const Favourite = () => {
         const userData = localStorage.getItem("userData");
 
         if (!token || !userData) {
-            alert("Please log in to view your favourite items.");
+            toast.warning("Vui lòng đăng nhập để xem danh sách yêu thích.");
             navigate("/login");
             return;
         }
 
         try {
             const user = JSON.parse(userData);
-            setUserId(user.id);
+            setUserId(user.id || user._id);
         } catch (e) {
             console.error("Failed to parse user data from localStorage:", e);
-            alert("Error retrieving user data. Please log in again.");
+            toast.error("Lỗi xử lý dữ liệu người dùng. Vui lòng đăng nhập lại.");
             navigate("/login");
             return;
         }
@@ -61,7 +64,7 @@ const Favourite = () => {
                 console.log("Fetched favourite food IDs:", favouriteFoodIds);
 
                 const favoriteFoodObjects = allFoodItems.filter((food) => {
-                    const foodIdString = String(food.id);
+                    const foodIdString = String(food.id || food._id);
                     console.log(
                         `Checking if food ID ${foodIdString} is in favorites: ${favouriteFoodIds.includes(
                             foodIdString
@@ -74,7 +77,7 @@ const Favourite = () => {
 
                 const initialQuantities = {};
                 favoriteFoodObjects.forEach((food) => {
-                    initialQuantities[food.id] = 0;
+                    initialQuantities[food.id || food._id] = 1;
                 });
                 setQuantities(initialQuantities);
 
@@ -83,7 +86,7 @@ const Favourite = () => {
                 setError(err);
                 setLoading(false);
                 console.error("Error fetching foods or favorites:", err);
-                alert("Failed to fetch favourite items.");
+                toast.error("Không thể tải danh sách yêu thích.");
             }
         };
 
@@ -95,7 +98,7 @@ const Favourite = () => {
     const toggleFavourite = async (foodId) => {
         const token = localStorage.getItem("jwtToken");
         if (!token || !userId) {
-            alert("Please log in to remove items from your favourites.");
+            toast.warning("Vui lòng đăng nhập để xóa món yêu thích.");
             navigate("/login");
             return;
         }
@@ -107,10 +110,10 @@ const Favourite = () => {
                 },
             });
             setFavourites((prev) => prev.filter((food) => food.id !== foodId));
-            alert("Đã xoá khỏi danh sách yêu thích!");
+            toast.success("Đã xóa khỏi danh sách yêu thích!");
         } catch (err) {
             console.error("Error removing from favorites:", err);
-            alert("Failed to remove from favorites.");
+            toast.error("Có lỗi xảy ra khi xóa!");
         }
     };
 
@@ -123,11 +126,11 @@ const Favourite = () => {
     };
 
     const handleAddToCart = async (food) => {
-        const quantity = quantities[food.id];
+        const quantity = quantities[food.id || food._id];
         const token = localStorage.getItem("jwtToken");
 
         if (!token || !userId) {
-            alert("Please log in to add items to your cart.");
+            toast.warning("Vui lòng đăng nhập để thêm vào giỏ hàng.");
             navigate("/login");
             return;
         }
@@ -135,31 +138,31 @@ const Favourite = () => {
         if (quantity > 0 && userId) {
             try {
                 const itemToAdd = {
-                    foodId: food.id,
+                    foodId: food.id || food._id,
                     name: food.name,
                     price: food.price,
                     quantity: quantity,
                     imageUrl: food.image,
                 };
 
-                const response = await axios.post(`http://localhost:8080/api/carts/${userId}/items`, itemToAdd, {
+                await axios.post(`http://localhost:8080/api/carts/${userId}/items`, itemToAdd, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
                 });
-                console.log("Item added to cart:", response.data);
-                alert(`Đã thêm ${quantity} ${food.name} vào giỏ hàng!`);
 
-                setQuantities((prev) => ({ ...prev, [food.id]: 0 }));
+                toast.success(`Đã thêm ${quantity} ${food.name} vào giỏ hàng!`);
+
+                setQuantities((prev) => ({ ...prev, [food.id || food._id]: 1 }));
 
                 // Trigger custom event to update header cart count
                 window.dispatchEvent(new Event("cartUpdated"));
             } catch (err) {
                 console.error("Error adding item to cart:", err);
-                alert("Failed to add item to cart.");
+                toast.error("Có lỗi xảy ra khi thêm vào giỏ hàng!");
             }
         } else if (quantity === 0) {
-            alert("Please select a quantity greater than 0.");
+            toast.warning("Vui lòng chọn số lượng lớn hơn 0.");
         }
     };
 
@@ -237,7 +240,9 @@ const Favourite = () => {
                                 <p className="text-red-600 font-bold text-xl mb-3">
                                     {item.price?.toLocaleString("vi-VN")}đ
                                 </p>
-                                <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">{item.desc}</p>
+                                <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">
+                                    {item.description}
+                                </p>
 
                                 {/* Action Row - Updated to match Menu page design */}
                                 <div className="flex items-center justify-between">

@@ -1,5 +1,8 @@
 import React, { useState } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
+import { toast } from "../components/Toast";
 
 const Signup = () => {
     // State quản lý dữ liệu form
@@ -14,6 +17,8 @@ const Signup = () => {
 
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
 
     // Hàm cập nhật state khi input thay đổi
     const handleInputChange = (e) => {
@@ -50,43 +55,44 @@ const Signup = () => {
     const toggleConfirmPassword = () => setShowConfirmPassword(!showConfirmPassword);
 
     // Hàm xử lý submit form
-    const handleSubmit = async (event) => {
-        event.preventDefault(); // Ngăn chặn submit form mặc định
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
 
-        // Kiểm tra mật khẩu khớp
+        // Validate password match
         if (formData.password !== formData.confirmPassword) {
-            alert("Mật khẩu và xác nhận mật khẩu không khớp!");
+            toast.error("Mật khẩu và xác nhận mật khẩu không khớp!");
+            setLoading(false);
             return;
         }
 
-        // Chuẩn bị dữ liệu gửi đi (loại bỏ confirmPassword)
-        const { confirmPassword, ...dataToSend } = formData;
-        // Backend sẽ tự gán role và createdAt
-
         try {
-            const response = await fetch("http://localhost:8080/api/auth/register", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(dataToSend),
+            const response = await axios.post("http://localhost:8080/api/auth/register", {
+                username: formData.username,
+                email: formData.email,
+                password: formData.password,
+                phone: formData.phoneNumber,
+                fullName: formData.fullName,
             });
 
-            const result = await response.json(); // Backend trả về RegisterResponse { success: boolean, message: string }
+            const result = response.data;
 
-            if (response.ok && result.success) {
-                // Kiểm tra status 200 và success: true
-                alert("Đăng ký thành công! Vui lòng đăng nhập.");
+            if (response.ok) {
+                // Đăng ký thành công
+                console.log("Registration successful:", result);
+                toast.success("Đăng ký thành công! Vui lòng đăng nhập.");
                 // Chuyển hướng đến trang đăng nhập
-                // Lưu ý: Bạn cần cấu hình React Router hoặc tương tự để chuyển hướng
-                window.location.href = "/login"; // Ví dụ chuyển hướng đơn giản
+                navigate("/login");
             } else {
-                // Xử lý lỗi từ backend
-                alert("Đăng ký thất bại: " + (result.message || "Có lỗi xảy ra."));
+                // Xử lý lỗi đăng ký
+                console.error("Registration failed:", result);
+                toast.error("Đăng ký thất bại: " + (result.error || "Vui lòng thử lại."));
             }
         } catch (error) {
-            console.error("Error during registration:", error);
-            alert("Đã xảy ra lỗi kết nối đến server. Vui lòng thử lại.");
+            console.error("Registration error:", error);
+            toast.error("Đã xảy ra lỗi kết nối đến server. Vui lòng thử lại.");
+        } finally {
+            setLoading(false);
         }
     };
 

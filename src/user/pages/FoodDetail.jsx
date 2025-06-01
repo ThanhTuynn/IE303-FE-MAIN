@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { FaHeart, FaPlus, FaMinus, FaShoppingCart } from "react-icons/fa";
 import axios from "axios";
 import aiRecommendationService from "../services/aiRecommendationService";
+import { toast } from "../components/Toast";
 
 const FoodDetail = () => {
     const { foodId } = useParams();
@@ -181,7 +182,7 @@ const FoodDetail = () => {
     // Handle favorite toggle
     const handleFavoriteToggle = async () => {
         if (!isLoggedIn || !userId) {
-            alert("Vui lòng đăng nhập để thêm vào yêu thích!");
+            toast.warning("Vui lòng đăng nhập để thêm vào yêu thích!");
             navigate("/login");
             return;
         }
@@ -197,91 +198,73 @@ const FoodDetail = () => {
                     headers: { Authorization: `Bearer ${token}` },
                 });
                 setIsFavorite(false);
-                alert("Đã xóa khỏi danh sách yêu thích!");
+                toast.success("Đã xóa khỏi danh sách yêu thích!");
             } else {
                 // Add to favorites
                 await axios.post(
                     `http://localhost:8080/api/users/${userId}/favourites`,
                     { foodId: foodIdToUse },
                     {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                            "Content-Type": "application/json",
-                        },
+                        headers: { Authorization: `Bearer ${token}` },
                     }
                 );
                 setIsFavorite(true);
-                alert("Đã thêm vào danh sách yêu thích!");
+                toast.success("Đã thêm vào danh sách yêu thích!");
             }
         } catch (error) {
             console.error("Error toggling favorite:", error);
-            alert("Có lỗi xảy ra khi cập nhật yêu thích!");
+            toast.error("Có lỗi xảy ra khi cập nhật yêu thích!");
         }
     };
 
     // Handle add to cart
     const handleAddToCart = async () => {
         if (!isLoggedIn || !userId) {
-            alert("Vui lòng đăng nhập để thêm vào giỏ hàng!");
+            toast.warning("Vui lòng đăng nhập để thêm vào giỏ hàng!");
             navigate("/login");
             return;
         }
 
         const token = localStorage.getItem("jwtToken");
+        const foodIdToUse = food._id || food.id;
 
         try {
-            const itemToAdd = {
-                foodId: food._id || food.id,
-                name: food.name,
-                price: food.price,
-                quantity: quantity,
-                imageUrl: food.image,
-            };
+            await axios.post(
+                `http://localhost:8080/api/carts/${userId}/items`,
+                {
+                    foodId: foodIdToUse,
+                    quantity: quantity,
+                    specialInstructions: specialInstructions || "",
+                },
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
 
-            await axios.post(`http://localhost:8080/api/carts/${userId}/items`, itemToAdd, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            toast.success(`Đã thêm ${quantity} ${food.name} vào giỏ hàng!`);
 
-            alert(`Đã thêm ${quantity} ${food.name} vào giỏ hàng!`);
+            // Reset form
             setQuantity(1);
             setSpecialInstructions("");
-
-            // Trigger custom event to update header cart count
-            window.dispatchEvent(new Event("cartUpdated"));
         } catch (error) {
             console.error("Error adding to cart:", error);
-            alert("Có lỗi xảy ra khi thêm vào giỏ hàng!");
+            toast.error("Có lỗi xảy ra khi thêm vào giỏ hàng!");
         }
     };
 
     // Handle buy now
     const handleBuyNow = () => {
-        if (!isLoggedIn || !userId) {
-            alert("Vui lòng đăng nhập để mua hàng!");
+        if (!isLoggedIn) {
+            toast.warning("Vui lòng đăng nhập để mua hàng!");
             navigate("/login");
             return;
         }
 
-        // Navigate to payment with current item
-        const cartData = {
-            cartItems: [
-                {
-                    id: food._id || food.id,
-                    name: food.name,
-                    price: food.price,
-                    quantity: quantity,
-                    image: food.image,
-                },
-            ],
-            totalAmount: food.price * quantity,
-            customerInfo: {
-                name: "Customer",
-                email: "customer@unifoodie.com",
-                phone: "0123456789",
-            },
-        };
-
-        navigate("/payment", { state: cartData });
+        // Add to cart first, then navigate to payment
+        handleAddToCart();
+        setTimeout(() => {
+            navigate("/cart");
+        }, 1000); // Wait for toast to show
     };
 
     if (loading) {

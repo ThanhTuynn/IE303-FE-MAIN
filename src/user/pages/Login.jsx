@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { useNavigate, Link } from "react-router-dom";
-import useNotification from "../hooks/useNotification";
+import { toast } from "../components/Toast";
 
 const Login = () => {
     // State quản lý dữ liệu form
@@ -11,6 +11,7 @@ const Login = () => {
     });
 
     const [showPassword, setShowPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     // Hàm cập nhật state khi input thay đổi
     const handleInputChange = (e) => {
@@ -27,6 +28,7 @@ const Login = () => {
     // Hàm xử lý submit form
     const handleSubmit = async (event) => {
         event.preventDefault(); // Ngăn chặn submit form mặc định
+        setLoading(true);
 
         // Chuẩn bị dữ liệu gửi đi
         // Backend API login của bạn nhận 'username' và 'password'
@@ -60,17 +62,20 @@ const Login = () => {
                 // Dispatch event to notify other components about login
                 window.dispatchEvent(new Event("userLoggedIn"));
 
-                alert("Đăng nhập thành công!");
+                toast.success("Đăng nhập thành công!");
                 // Chuyển hướng đến trang chủ
-                // Lưu ý: Bạn cần cấu hình React Router hoặc tương tự để chuyển hướng
-                window.location.href = "/"; // Ví dụ chuyển hướng đơn giản
+                setTimeout(() => {
+                    window.location.href = "/";
+                }, 1000);
             } else {
                 // Xử lý lỗi (ví dụ: 401 Unauthorized) hoặc lỗi từ backend trả về
-                alert("Đăng nhập thất bại: " + (result.error || "Sai tên đăng nhập hoặc mật khẩu.")); // result.error từ backend login nếu có lỗi
+                toast.error("Đăng nhập thất bại: " + (result.error || "Sai tên đăng nhập hoặc mật khẩu.")); // result.error từ backend login nếu có lỗi
             }
         } catch (error) {
-            console.error("Error during login:", error);
-            alert("Đã xảy ra lỗi kết nối đến server. Vui lòng thử lại.");
+            console.error("Login error:", error);
+            toast.error("Đã xảy ra lỗi kết nối đến server. Vui lòng thử lại.");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -120,9 +125,11 @@ const Login = () => {
                             <button
                                 type="submit"
                                 className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-full mt-6 shadow"
+                                disabled={loading}
                             >
-                                Đăng nhập
+                                {loading ? "Đang đăng nhập..." : "Đăng nhập"}
                             </button>
+
                             <p className="text-sm text-center mt-4">
                                 Bạn quên mật khẩu?{" "}
                                 <a href="/reset-password" className="text-red-600 font-semibold">
