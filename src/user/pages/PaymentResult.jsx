@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { XCircle, AlertCircle, ArrowLeft, Receipt, User } from "lucide-react";
+import cartService from "../services/cartService";
 
 const PaymentResult = () => {
     const [searchParams] = useSearchParams();
@@ -15,6 +16,22 @@ const PaymentResult = () => {
 
     useEffect(() => {
         const fetchPaymentInfo = async () => {
+            console.log("📊 PaymentResult - Status:", status, "OrderCode:", orderCode);
+
+            // Log that cart will NOT be cleared for failed/cancelled payments
+            if (status === "cancelled" || status === "failed") {
+                console.log("🛒 Payment failed/cancelled - Cart will NOT be cleared, items preserved");
+
+                // Try to restore cart from backup if it was cleared
+                console.log("🔄 Attempting to restore cart from backup...");
+                const restoreResult = await cartService.restoreCart();
+                if (restoreResult.success) {
+                    console.log(`✅ Cart restored successfully! ${restoreResult.restoredCount} items restored`);
+                } else {
+                    console.log("ℹ️ No cart backup to restore or cart is already intact");
+                }
+            }
+
             if (orderCode) {
                 try {
                     const response = await fetch(`http://localhost:8080/api/payments/status/${orderCode}`);
@@ -104,6 +121,15 @@ const PaymentResult = () => {
                         <StatusIcon className={`w-16 h-16 ${statusInfo.color} mx-auto mb-4`} />
                         <h1 className="text-3xl font-bold text-gray-900 mb-2">{statusInfo.title}</h1>
                         <p className="text-gray-600">{statusInfo.message}</p>
+
+                        {/* Cart preserved notification for failed/cancelled payments */}
+                        {(status === "cancelled" || status === "failed") && (
+                            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3 max-w-md mx-auto">
+                                <p className="text-sm text-blue-800">
+                                    ✅ Giỏ hàng của bạn vẫn được giữ nguyên. Bạn có thể thử thanh toán lại.
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                     {/* Payment Info */}

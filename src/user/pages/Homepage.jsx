@@ -4,6 +4,7 @@ import { Navigation, Autoplay } from "swiper/modules";
 import { useNavigate } from "react-router-dom";
 import axios from "axios"; // Import axios for API calls
 import aiRecommendationService from "../services/aiRecommendationService"; // Import AI service
+import useNotification from "../hooks/useNotification";
 
 const Homepage = () => {
     const [quantities, setQuantities] = useState({}); // Change to object to store quantities by food ID
@@ -16,6 +17,7 @@ const Homepage = () => {
     const [error, setError] = useState(null); // State to track any errors
     const [userId, setUserId] = useState(null); // State to store the user ID
     const [aiServiceAvailable, setAiServiceAvailable] = useState(false);
+    const notify = useNotification();
 
     useEffect(() => {
         const token = localStorage.getItem("jwtToken");
@@ -126,12 +128,12 @@ const Homepage = () => {
 
     const handleAddToCart = async (food) => {
         const quantity = quantities[food.id];
-        const token = localStorage.getItem("jwtToken"); // Get JWT token from localStorage
+        const token = localStorage.getItem("jwtToken");
 
-        if (!token) {
-            alert("Please log in to add items to your cart.");
+        if (!token || !userId) {
+            notify.warning("Vui lòng đăng nhập để thêm vào giỏ hàng.");
             navigate("/login");
-            return; // Stop if not logged in
+            return;
         }
 
         if (quantity > 0 && userId) {
@@ -141,30 +143,27 @@ const Homepage = () => {
                     name: food.name,
                     price: food.price,
                     quantity: quantity,
-                    imageUrl: food.image, // Assuming 'image' field from backend corresponds to imageUrl
+                    imageUrl: food.image,
                 };
 
-                // Make the API call to add item to cart with Authorization header
                 const response = await axios.post(`http://localhost:8080/api/carts/${userId}/items`, itemToAdd, {
                     headers: {
-                        Authorization: `Bearer ${token}`, // Include the JWT token
+                        Authorization: `Bearer ${token}`,
                     },
                 });
                 console.log("Item added to cart:", response.data);
-                alert(`Đã thêm ${quantity} ${food.name} vào giỏ hàng!`);
+                notify.success(`Đã thêm ${quantity} ${food.name} vào giỏ hàng!`);
 
-                // Optionally reset the quantity counter after adding to cart
                 setQuantities((prev) => ({ ...prev, [food.id]: 0 }));
+
+                // Trigger custom event to update header cart count
+                window.dispatchEvent(new Event("cartUpdated"));
             } catch (err) {
                 console.error("Error adding item to cart:", err);
-                alert("Failed to add item to cart.");
+                notify.error("Không thể thêm vào giỏ hàng. Vui lòng thử lại.");
             }
         } else if (quantity === 0) {
-            alert("Please select a quantity greater than 0.");
-        } else if (!userId) {
-            // This case is now handled by the initial token check
-            alert("Please log in to add items to your cart.");
-            navigate("/login");
+            notify.warning("Vui lòng chọn số lượng lớn hơn 0.");
         }
     };
 
@@ -220,16 +219,7 @@ const Homepage = () => {
                 </Swiper>
 
                 {/* Login CTA Button (visible only if not logged in)*/}
-                {!isLoggedIn && (
-                    <div className="absolute inset-0 flex items-center justify-center z-10">
-                        <button
-                            onClick={handleLoginClick}
-                            className="bg-red-600 hover:bg-red-700 text-white text-xl md:text-2xl font-bold py-3 px-8 rounded-full shadow-lg transition-colors duration-300"
-                        >
-                            ĐĂNG NHẬP NGAY
-                        </button>
-                    </div>
-                )}
+                {/* Removed login button overlay */}
             </section>
 
             {/* Gợi ý cho bạn */}
