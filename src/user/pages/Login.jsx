@@ -15,10 +15,8 @@ const Login = () => {
     // Hàm cập nhật state khi input thay đổi
     const handleInputChange = (e) => {
         const { placeholder, value } = e.target;
-        // Ánh xạ placeholder sang tên trường trong state
         if (placeholder === "Tên đăng nhập hoặc Email của bạn *") {
-            // Cập nhật placeholder
-            setFormData({ ...formData, username: value });
+            setFormData({ ...formData, usernameOrEmail: value }); // Cập nhật đúng trường
         } else if (placeholder === "Mật khẩu *") {
             setFormData({ ...formData, password: value });
         }
@@ -37,7 +35,7 @@ const Login = () => {
         // Nếu bạn muốn login bằng email hoặc số điện thoại, cần sửa backend.
         // Tạm thời, gửi trường 'username' với giá trị từ input
         const dataToSend = {
-            username: formData.username, // Giả định input là username/email/sdt tùy backend xử lý
+            username: formData.usernameOrEmail, // Sử dụng đúng trường usernameOrEmail
             password: formData.password,
         };
 
