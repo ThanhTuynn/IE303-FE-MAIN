@@ -3,16 +3,15 @@ import { Trash, CheckSquare, Square } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import PaymentButton from "../components/PaymentButton";
+import EnhancedPaymentButton from "../components/EnhancedPaymentButton";
 
 const Cart = () => {
-    const navigate = useNavigate();
     const [items, setItems] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [userId, setUserId] = useState(null);
-
     const [discountCode, setDiscountCode] = useState("");
     const [discount, setDiscount] = useState(0);
+    const [userId, setUserId] = useState(null);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const navigate = useNavigate();
 
     // Customer info from localStorage
     const customerInfo = (() => {
@@ -36,50 +35,55 @@ const Cart = () => {
         };
     })();
 
+    // Get user info from localStorage
     useEffect(() => {
         const token = localStorage.getItem("jwtToken");
         const userData = localStorage.getItem("userData");
 
-        if (!token || !userData) {
-            alert("Please log in to view your cart.");
-            navigate("/login");
-            return;
-        }
-
-        try {
-            const user = JSON.parse(userData);
-            setUserId(user.id);
-        } catch (e) {
-            console.error("Failed to parse user data from localStorage:", e);
-            alert("Error retrieving user data.");
-            navigate("/login");
-            return;
-        }
-
-        const fetchCart = async () => {
+        if (token && userData) {
             try {
-                setLoading(true);
-                if (userId) {
-                    const response = await axios.get(`http://localhost:8080/api/carts/${userId}`, {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        },
-                    });
-                    setItems(response.data.items);
-                }
-                setLoading(false);
-            } catch (err) {
-                setError(err);
-                setLoading(false);
-                console.error("Error fetching cart:", err);
-                alert("Failed to fetch cart data.");
+                const user = JSON.parse(userData);
+                setUserId(user.id || user._id);
+                setIsLoggedIn(true);
+                console.log("Cart - User logged in:", user);
+            } catch (error) {
+                console.error("Error parsing user data:", error);
+                setIsLoggedIn(false);
             }
-        };
+        } else {
+            setIsLoggedIn(false);
+            console.warn("Cart - No user data found, user may need to login");
+        }
+    }, []);
 
+    useEffect(() => {
         if (userId) {
             fetchCart();
         }
     }, [userId]);
+
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    const fetchCart = async () => {
+        try {
+            setLoading(true);
+            if (userId) {
+                const response = await axios.get(`http://localhost:8080/api/carts/${userId}`, {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("jwtToken")}`,
+                    },
+                });
+                setItems(response.data.items);
+            }
+            setLoading(false);
+        } catch (err) {
+            setError(err);
+            setLoading(false);
+            console.error("Error fetching cart:", err);
+            alert("Failed to fetch cart data.");
+        }
+    };
 
     const handleQuantityChange = async (id, delta) => {
         const token = localStorage.getItem("jwtToken");
@@ -298,45 +302,33 @@ const Cart = () => {
                         </div>
                     </div>
 
-                    {/* Payment Button */}
+                    {/* Continue Button */}
                     {selectedItems.length > 0 && finalAmount > 0 ? (
-                        <div className="mt-6 space-y-3">
-                            <PaymentButton
-                                orderId={orderId}
-                                amount={finalAmount}
-                                description={`Đơn hàng UniFoodie - ${selectedItems.length} món`}
-                                customerInfo={customerInfo}
-                                items={paymentItems}
-                                className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-full shadow-md"
-                                onSuccess={(result) => {
-                                    console.log("Payment created:", result);
-                                    // Redirect to success page after payment
-                                    navigate("/payment-success", {
+                        <div className="mt-6">
+                            <button
+                                onClick={() => {
+                                    // Navigate to payment page with cart data
+                                    navigate("/payment", {
                                         state: {
-                                            orderCode: result.orderCode,
-                                            amount: finalAmount,
-                                            items: selectedItems,
+                                            cartItems: selectedItems,
+                                            totalAmount: finalAmount,
+                                            originalTotal: totalPrice,
+                                            discount: discount,
+                                            customerInfo: customerInfo,
+                                            userId: userId,
                                         },
                                     });
                                 }}
-                                onError={(error) => {
-                                    console.error("Payment error:", error);
-                                    alert("Tạo thanh toán thất bại: " + error.message);
-                                }}
-                            />
-
-                            <button
-                                onClick={handleProceedToPayment}
-                                className="w-full bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-full text-sm"
+                                className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-full text-lg font-semibold shadow-md"
                             >
-                                Hoặc tiếp tục với thanh toán thông thường
+                                Tiếp tục đặt hàng
                             </button>
                         </div>
                     ) : (
                         <div className="mt-6">
                             <div className="text-center text-gray-500 py-4">
                                 {selectedItems.length === 0
-                                    ? "Vui lòng chọn sản phẩm để thanh toán"
+                                    ? "Vui lòng chọn sản phẩm để tiếp tục"
                                     : "Không có sản phẩm hợp lệ"}
                             </div>
                         </div>
