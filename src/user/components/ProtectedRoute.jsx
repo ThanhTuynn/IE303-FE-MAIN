@@ -29,11 +29,21 @@ const ProtectedRoute = ({ element: Element, requiredRole, ...rest }) => {
   }
 
   // If authenticated, check if a specific role is required and if it matches the user's role
-  if (requiredRole && userRole !== requiredRole) {
-    // If role does not match the required role, redirect to an unauthorized page or home
-    console.warn(`Unauthorized access attempt: User role is '${userRole}', but required role is '${requiredRole}'`);
-    // TODO: Consider creating a dedicated Unauthorized page
-    return <Navigate to="/" replace />; // Redirect to home for now
+  if (requiredRole) {
+    const isAdminRoute = requiredRole === 'admin';
+    const hasAdminRole = userRole === 'quản lý cửa hàng';
+
+    if (isAdminRoute && !hasAdminRole) {
+      // If required role is admin but user does not have 'quản lý cửa hàng' role
+      console.warn(`Unauthorized access attempt: User role is '${userRole}', but required role is '${requiredRole}'`);
+      // TODO: Consider creating a dedicated Unauthorized page
+      return <Navigate to="/" replace />; // Redirect to home for now
+    } else if (!isAdminRoute && userRole !== requiredRole) {
+      // For other required roles, check for exact match
+      console.warn(`Unauthorized access attempt: User role is '${userRole}', but required role is '${requiredRole}'`);
+      // TODO: Consider creating a dedicated Unauthorized page
+      return <Navigate to="/" replace />; // Redirect to home for now
+    }
   }
 
   // If authenticated and role matches (or no role required), render the element

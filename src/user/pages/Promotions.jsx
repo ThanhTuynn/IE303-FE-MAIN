@@ -65,8 +65,8 @@ const Promotions = () => {
         // Group foods by promotion
         const groupedFoods = {};
         promotionsResponse.data.forEach(promotion => {
-            const applicableFoods = allFoods.filter(food => 
-                promotion.applicableFoodIds && promotion.applicableFoodIds.includes(food.id)
+            const applicableFoods = allFoods.filter(food =>
+                promotion.applicableFoodIds && promotion.applicableFoodIds.includes(food.id.toString())
             );
             if (applicableFoods.length > 0) {
                  groupedFoods[promotion.name] = { // Use promotion name as the group key
@@ -119,12 +119,17 @@ const Promotions = () => {
 
       if (quantity > 0 && userId) {
           try {
+              // Calculate the price to add to cart, considering promotion
+              const priceToAddToCart = food.promotionDetails
+                  ? food.price * (1 - food.promotionDetails.value / 100)
+                  : food.price;
+
               const itemToAdd = {
                   foodId: food.id,
                   name: food.name,
-                  price: food.price,
+                  price: priceToAddToCart, // Use the calculated price
                   quantity: quantity,
-                  imageUrl: food.image // Assuming 'image' field from backend corresponds to imageUrl
+                  imageUrl: food.image
               };
 
               // Make the API call to add item to cart with Authorization header
@@ -220,7 +225,20 @@ const Promotions = () => {
                 >
                   <img src={food.image} alt={food.name} className="w-full h-48 object-cover rounded-md mb-3" />
                   <h3 className="font-semibold text-lg">{food.name}</h3>
-                  <p className="text-red-600 font-bold mt-1">{food.price.toLocaleString('vi-VN')}đ</p>
+                  {food.promotionDetails ? (
+                      <div className="flex items-center mt-1">
+                          {/* Giá gốc gạch ngang */}
+                          <span className="text-gray-500 text-sm line-through mr-2">{food.price.toLocaleString('vi-VN')}đ</span>
+                          {/* Giá sau khuyến mãi */}
+                          <span className="text-red-600 font-bold">{(food.price * (1 - food.promotionDetails.value / 100)).toLocaleString('vi-VN')}đ</span>
+                      </div>
+                  ) : (
+                      <p className="text-red-600 font-bold mt-1">{food.price.toLocaleString('vi-VN')}đ</p>
+                  )}
+                  {/* Display promotion dates */}
+                  {food.promotionDetails && food.promotionDetails.startDate && food.promotionDetails.endDate && (
+                      <p className="text-xs text-gray-500 mt-1 mb-8">{`Áp dụng từ ${new Date(food.promotionDetails.startDate).toLocaleDateString()} đến ${new Date(food.promotionDetails.endDate).toLocaleDateString()}`}</p>
+                  )}
                   <p className="text-sm text-gray-600 mb-3 line-clamp-4 overflow-hidden">{food.description}</p>
                   <div className="flex items-center justify-between mt-3">
                     <div className="flex items-center border rounded px-2 py-1">
@@ -260,11 +278,24 @@ const Promotions = () => {
                 >
                   <img src={food.image} alt={food.name} className="w-full h-48 object-cover rounded-md mb-3" />
                   <h3 className="font-semibold text-lg">{food.name}</h3>
-                  <p className="text-red-600 font-bold mt-1">{food.price.toLocaleString('vi-VN')}đ</p>
+                  {food.promotionDetails ? (
+                      <div className="flex items-center mt-1">
+                          {/* Giá gốc gạch ngang */}
+                          <span className="text-gray-500 text-sm line-through mr-2">{food.price.toLocaleString('vi-VN')}đ</span>
+                          {/* Giá sau khuyến mãi */}
+                          <span className="text-red-600 font-bold">{(food.price * (1 - food.promotionDetails.value / 100)).toLocaleString('vi-VN')}đ</span>
+                      </div>
+                  ) : (
+                      <p className="text-red-600 font-bold mt-1">{food.price.toLocaleString('vi-VN')}đ</p>
+                  )}
+                  {/* Display promotion dates */}
+                  {food.promotionDetails && food.promotionDetails.startDate && food.promotionDetails.endDate && (
+                      <p className="text-xs text-gray-500 mt-1">{`Áp dụng từ ${new Date(food.promotionDetails.startDate).toLocaleDateString()} đến ${new Date(food.promotionDetails.endDate).toLocaleDateString()}`}</p>
+                  )}
                   <p className="text-sm text-gray-600 mb-3 line-clamp-4 overflow-hidden">{food.description}</p>
                    {/* Display promotion details if available */}
                    {food.promotionDetails && (
-                       <p className="text-xs text-green-600 font-semibold">{`Promotion: ${food.promotionDetails.name}`}</p>
+                       <p className="text-sm text-green-600 font-bold mt-1">{`Giảm ${food.promotionDetails.value}%`}</p>
                    )}
                   <div className="flex items-center justify-between mt-3">
                     <div className="flex items-center border rounded px-2 py-1">

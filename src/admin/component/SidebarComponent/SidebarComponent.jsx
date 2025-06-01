@@ -9,14 +9,21 @@ import {
   UserOutlined,
   LogoutOutlined,
 } from "@ant-design/icons";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import logo from "../../asset/logoUniFoodie.png";
 import "./SidebarComponent.css";
 
 const SidebarComponent = () => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const isActive = (path) => location.pathname === path;
+
+  const handleLogout = () => {
+    localStorage.removeItem('jwtToken');
+    localStorage.removeItem('userData');
+    navigate('/login');
+  };
 
   return (
     <div className="sidebarcomponent">
@@ -97,13 +104,13 @@ const SidebarComponent = () => {
         </ul>
         <ul className="subBar">
           <li className="menu-item">
-            <Link
-              to="/admin/sign-in"
-              className={`${isActive("/admin/sign-in") ? "active" : ""}`}
+            <button
+              onClick={handleLogout}
+              className="logout-button"
             >
               <LogoutOutlined className="icon" />
               <span>Đăng xuất</span>
-            </Link>
+            </button>
           </li>
         </ul>
       </div>

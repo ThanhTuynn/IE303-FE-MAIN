@@ -1,185 +1,135 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { DollarOutlined, ShoppingOutlined, HeartOutlined, GiftOutlined, SearchOutlined } from "@ant-design/icons";
 import { DatePicker } from "antd";
 import Topbar from "../../component/TopbarComponent/TopbarComponent";
 import FooterComponent from "../../component/FooterComponent/FooterComponent";
 import "./DashboardPage.scss";
+import axios from 'axios';
 
 const Dashboard = () => {
     const [filterStatus, setFilterStatus] = useState(""); // Bộ lọc trạng thái
     const [filterPayment, setFilterPayment] = useState(""); // Bộ lọc thanh toán
     const [filterDate, setFilterDate] = useState(null);
+    const [orders, setOrders] = useState([]); // State để lưu trữ đơn hàng từ API
+    const [loading, setLoading] = useState(true); // State để theo dõi trạng thái loading
+    const [error, setError] = useState(null); // State để lưu trữ lỗi
+    const [userData, setUserData] = useState({}); // State để lưu trữ thông tin user
 
-    const orders = [
-        {
-            time: "17:30 28/04/2025",
-            status: "Đã giao",
-            order: "01 bánh tráng nướng, 02 ly trà sữa full topping",
-            customer: "Bảo Ân",
-            total: "75,000 VNĐ",
-            payment: "Tiền mặt",
-        },
-        {
-            time: "14:15 27/04/2025",
-            status: "Đang giao",
-            order: "02 phần cơm gà, 01 ly nước cam",
-            customer: "Minh Anh",
-            total: "120,000 VNĐ",
-            payment: "Ngân hàng",
-        },
-        {
-            time: "10:00 26/04/2025",
-            status: "Đã hủy",
-            order: "03 bánh mì thịt nướng",
-            customer: "Ngọc Trâm",
-            total: "45,000 VNĐ",
-            payment: "MoMo",
-        },
-        {
-            time: "18:45 25/04/2025",
-            status: "Đã giao",
-            order: "01 pizza hải sản, 02 ly coca",
-            customer: "Hữu Phước",
-            total: "250,000 VNĐ",
-            payment: "Ngân hàng",
-        },
-        {
-            time: "12:30 24/04/2025",
-            status: "Đang giao",
-            order: "02 phần bún bò Huế",
-            customer: "Thanh Tâm",
-            total: "90,000 VNĐ",
-            payment: "Tiền mặt",
-        },
-        {
-            time: "17:30 28/04/2025",
-            status: "Đã giao",
-            order: "01 bánh tráng nướng, 02 ly trà sữa full topping",
-            customer: "Bảo Ân",
-            total: "75,000 VNĐ",
-            payment: "Tiền mặt",
-        },
-        {
-            time: "14:15 27/04/2025",
-            status: "Đang giao",
-            order: "02 phần cơm gà, 01 ly nước cam",
-            customer: "Minh Anh",
-            total: "120,000 VNĐ",
-            payment: "Ngân hàng",
-        },
-        {
-            time: "10:00 26/04/2025",
-            status: "Đã hủy",
-            order: "03 bánh mì thịt nướng",
-            customer: "Ngọc Trâm",
-            total: "45,000 VNĐ",
-            payment: "MoMo",
-        },
-        {
-            time: "18:45 25/04/2025",
-            status: "Đã giao",
-            order: "01 pizza hải sản, 02 ly coca",
-            customer: "Hữu Phước",
-            total: "250,000 VNĐ",
-            payment: "Ngân hàng",
-        },
-        {
-            time: "12:30 24/04/2025",
-            status: "Đang giao",
-            order: "02 phần bún bò Huế",
-            customer: "Thanh Tâm",
-            total: "90,000 VNĐ",
-            payment: "Tiền mặt",
-        },
-        {
-            time: "17:30 28/04/2025",
-            status: "Đã giao",
-            order: "01 bánh tráng nướng, 02 ly trà sữa full topping",
-            customer: "Bảo Ân",
-            total: "75,000 VNĐ",
-            payment: "Tiền mặt",
-        },
-        {
-            time: "14:15 27/04/2025",
-            status: "Đang giao",
-            order: "02 phần cơm gà, 01 ly nước cam",
-            customer: "Minh Anh",
-            total: "120,000 VNĐ",
-            payment: "Ngân hàng",
-        },
-        {
-            time: "10:00 26/04/2025",
-            status: "Đã hủy",
-            order: "03 bánh mì thịt nướng",
-            customer: "Ngọc Trâm",
-            total: "45,000 VNĐ",
-            payment: "MoMo",
-        },
-        {
-            time: "18:45 25/04/2025",
-            status: "Đã giao",
-            order: "01 pizza hải sản, 02 ly coca",
-            customer: "Hữu Phước",
-            total: "250,000 VNĐ",
-            payment: "Ngân hàng",
-        },
-        {
-            time: "12:30 24/04/2025",
-            status: "Đang giao",
-            order: "02 phần bún bò Huế",
-            customer: "Thanh Tâm",
-            total: "90,000 VNĐ",
-            payment: "Tiền mặt",
-        },
-        {
-            time: "17:30 28/04/2025",
-            status: "Đã giao",
-            order: "01 bánh tráng nướng, 02 ly trà sữa full topping",
-            customer: "Bảo Ân",
-            total: "75,000 VNĐ",
-            payment: "Tiền mặt",
-        },
-        {
-            time: "14:15 27/04/2025",
-            status: "Đang giao",
-            order: "02 phần cơm gà, 01 ly nước cam",
-            customer: "Minh Anh",
-            total: "120,000 VNĐ",
-            payment: "Ngân hàng",
-        },
-        {
-            time: "10:00 26/04/2025",
-            status: "Đã hủy",
-            order: "03 bánh mì thịt nướng",
-            customer: "Ngọc Trâm",
-            total: "45,000 VNĐ",
-            payment: "MoMo",
-        },
-        {
-            time: "18:45 25/04/2025",
-            status: "Đã giao",
-            order: "01 pizza hải sản, 02 ly coca",
-            customer: "Hữu Phước",
-            total: "250,000 VNĐ",
-            payment: "Ngân hàng",
-        },
-        {
-            time: "12:30 24/04/2025",
-            status: "Đang giao",
-            order: "02 phần bún bò Huế",
-            customer: "Thanh Tâm",
-            total: "90,000 VNĐ",
-            payment: "Tiền mặt",
-        },
-    ];
+    useEffect(() => {
+        fetchOrders();
+    }, []); // Chạy một lần khi component mount
+
+    const fetchUserData = async (userId) => {
+        if (userData[userId]) return userData[userId]; // Return cached data if available
+        
+        const token = localStorage.getItem('jwtToken');
+        if (!token) return null;
+
+        try {
+            const response = await axios.get(`http://localhost:8080/api/users/${userId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            setUserData(prev => ({...prev, [userId]: response.data}));
+            return response.data;
+        } catch (err) {
+            console.error('Error fetching user data:', err);
+            return null;
+        }
+    };
+
+    const fetchOrders = async () => {
+        const token = localStorage.getItem('jwtToken'); // Lấy token từ localStorage
+        if (!token) {
+            setError("No authentication token found. Please log in.");
+            setLoading(false);
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const response = await axios.get('http://localhost:8080/api/orders', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            setOrders(response.data); // Cập nhật state orders với dữ liệu từ API
+            
+            // Fetch user data for each order
+            const userIds = [...new Set(response.data.map(order => order.userId))];
+            for (const userId of userIds) {
+                await fetchUserData(userId);
+            }
+            
+            setError(null);
+        } catch (err) {
+            console.error('Error fetching orders:', err);
+            setError("Failed to load orders. Please try again.");
+            setOrders([]); // Xóa dữ liệu cũ nếu có lỗi
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Lọc danh sách đơn hàng dựa trên trạng thái và phương thức thanh toán
     const filteredOrders = orders.filter((order) => {
         const statusMatch = filterStatus ? order.status === filterStatus : true;
         const paymentMatch = filterPayment ? order.payment === filterPayment : true;
-        const dateMatch = filterDate ? order.time.includes(filterDate.format("DD/MM/YYYY")) : true;
+        const dateMatch = filterDate ? order.createdAt.includes(filterDate.format("YYYY-MM-DD")) : true;
         return statusMatch && paymentMatch && dateMatch;
     });
+
+    const handleStatusChange = async (orderId, newStatus) => {
+        const token = localStorage.getItem('jwtToken');
+        if (!token) {
+            console.error("No authentication token found");
+            return;
+        }
+
+        try {
+            const response = await axios.put(`http://localhost:8080/api/orders/${orderId}/status`, null, {
+                params: { status: newStatus },
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const updatedOrder = response.data;
+            const updatedOrdersList = orders.map((order) =>
+                order.id === orderId ? updatedOrder : order
+            );
+            setOrders(updatedOrdersList);
+
+            console.log(`Order ${orderId} status updated to ${newStatus}`);
+
+        } catch (err) {
+            console.error('Error updating order status:', err.response ? err.response.data : err.message);
+            setError("Failed to update order status. Please try lại.");
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="dashboard-container">
+                <Topbar title="Dashboard" />
+                <div className="main-content">
+                    <p>Đang tải đơn hàng...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="dashboard-container">
+                <Topbar title="Dashboard" />
+                <div className="main-content">
+                    <p style={{ color: 'red' }}>Lỗi: {error}</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="dashboard-container">
@@ -279,40 +229,66 @@ const Dashboard = () => {
                                 <th>Khách hàng</th>
                                 <th>Tổng tiền</th>
                                 <th>Thanh toán</th>
+                                <th>Hành động</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredOrders.map((order, index) => (
-                                <tr key={index}>
-                                    <td>{order.time}</td>
+                            {filteredOrders.map((order) => (
+                                <tr key={order.id}>
+                                    <td>{new Date(order.createdAt).toLocaleString('vi-VN')}</td>
                                     <td>
                                         <span
                                             className={`status ${
-                                                order.status === "Đã giao"
+                                                order.status === "DELIVERED"
                                                     ? "success"
-                                                    : order.status === "Đang giao"
+                                                    : order.status === "PENDING" || order.status === "PREPARING"
                                                     ? "warning"
-                                                    : "error"
+                                                    : order.status === "CANCELLED"
+                                                    ? "error"
+                                                    : ""
                                             }`}
                                         >
                                             {order.status}
                                         </span>
                                     </td>
-                                    <td>{order.order}</td>
-                                    <td>{order.customer}</td>
-                                    <td>{order.total}</td>
+                                    <td>
+                                        {
+                                            order.items.map((item, itemIndex) => (
+                                                <div key={itemIndex}>
+                                                    {item.quantity} x {item.name}
+                                                </div>
+                                            ))
+                                        }
+                                    </td>
+                                    <td>{userData[order.userId]?.username || 'Loading...'}</td>
+                                    <td>{order.totalAmount.toLocaleString('vi-VN')} VNĐ</td>
                                     <td>
                                         <button
                                             className={`payment-btn ${
-                                                order.payment === "Tiền mặt"
+                                                order.paymentMethod === "Tiền mặt"
                                                     ? "cash"
-                                                    : order.payment === "Ngân hàng"
+                                                    : order.paymentMethod === "Ngân hàng"
                                                     ? "bank"
-                                                    : "momo"
+                                                    : order.paymentMethod === "MoMo"
+                                                    ? "momo"
+                                                    : ""
                                             }`}
                                         >
-                                            {order.payment}
+                                            {order.paymentMethod}
                                         </button>
+                                    </td>
+                                    <td>
+                                        <select
+                                            value={order.status}
+                                            onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                                        >
+                                            <option value="PENDING">PENDING</option>
+                                            <option value="CONFIRMED">CONFIRMED</option>
+                                            <option value="PREPARING">PREPARING</option>
+                                            <option value="READY">READY</option>
+                                            <option value="DELIVERED">DELIVERED</option>
+                                            <option value="CANCELLED">CANCELLED</option>
+                                        </select>
                                     </td>
                                 </tr>
                             ))}

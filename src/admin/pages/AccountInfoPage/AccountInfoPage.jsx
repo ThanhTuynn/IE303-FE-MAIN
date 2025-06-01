@@ -1,36 +1,110 @@
-import React, { useState } from "react";
-import { EyeOutlined, EyeInvisibleOutlined } from "@ant-design/icons";
+import React, { useState, useEffect, useRef } from "react";
+import { EyeOutlined, EyeInvisibleOutlined, CameraOutlined } from "@ant-design/icons";
 import Topbar from "../../component/TopbarComponent/TopbarComponent";
 import FooterComponent from "../../component/FooterComponent/FooterComponent";
 import "./AccountInfoPage.scss";
 import AvatarAccount from "../../asset/AvatarUser.jpg";
+import axios from "axios";
 
 const AccountInfo = () => {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
   const [accountInfo, setAccountInfo] = useState({
-    username: "Tynn",
-    fullName: "Nguyễn Ngọc Thanh Tuyền",
-    email: "thanhtuyen.ntt@gmail.com",
-    phone: "031 354 0401",
-    password: "Tuyen@0112",
+    username: "",
+    fullName: "",
+    email: "",
+    phone: "",
+    password: "",
+    profilePicture: "",
   });
 
-  const [initialAccountInfo] = useState({
-    username: "Tynn",
-    fullName: "Nguyễn Ngọc Thanh Tuyền",
-    email: "thanhtuyen.ntt@gmail.com",
-    phone: "031 354 0401",
-    password: "Tuyen@0112",
-  });
+  const [initialAccountInfo, setInitialAccountInfo] = useState(null);
 
-  const isChanged =
-    JSON.stringify(accountInfo) !== JSON.stringify(initialAccountInfo);
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const storedUserData = localStorage.getItem('userData');
+        const jwtToken = localStorage.getItem('jwtToken');
+
+        if (!storedUserData || !jwtToken) {
+          setError('User not logged in. Please log in to view account information.');
+          setLoading(false);
+          return;
+        }
+
+        const currentUser = JSON.parse(storedUserData);
+        const userId = currentUser.id || currentUser._id;
+
+        if (!userId) {
+          setError('User ID not found. Please log in again.');
+          setLoading(false);
+          return;
+        }
+
+        const response = await axios.get(`http://localhost:8080/api/users/${userId}`, {
+          headers: {
+            'Authorization': `Bearer ${jwtToken}`
+          }
+        });
+
+        const userData = response.data;
+        setAccountInfo({
+          username: userData.username || "",
+          fullName: userData.fullName || "",
+          email: userData.email || "",
+          phone: userData.phoneNumber || "",
+          password: userData.password || "",
+          profilePicture: userData.profilePicture || "https://cdn-icons-png.flaticon.com/512/706/706830.png",
+        });
+        setInitialAccountInfo({
+          username: userData.username || "",
+          fullName: userData.fullName || "",
+          email: userData.email || "",
+          phone: userData.phoneNumber || "",
+          password: userData.password || "",
+          profilePicture: userData.profilePicture || "https://cdn-icons-png.flaticon.com/512/706/706830.png",
+        });
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching user data:', err);
+        setError('Failed to load user data. Please try again later.');
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  const isChanged = initialAccountInfo && JSON.stringify(accountInfo) !== JSON.stringify(initialAccountInfo);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setAccountInfo({ ...accountInfo, [name]: value });
   };
 
-  const handleUpdate = () => {
-    alert("Thông tin tài khoản đã được cập nhật!");
+  const handleUpdate = async () => {
+    try {
+      const storedUserData = localStorage.getItem('userData');
+      const jwtToken = localStorage.getItem('jwtToken');
+      const currentUser = JSON.parse(storedUserData);
+      const userId = currentUser.id || currentUser._id;
+
+      const response = await axios.put(`http://localhost:8080/api/users/${userId}`, accountInfo, {
+        headers: {
+          'Authorization': `Bearer ${jwtToken}`
+        }
+      });
+
+      if (response.status === 200) {
+        alert("Thông tin tài khoản đã được cập nhật!");
+        setInitialAccountInfo({ ...accountInfo });
+      }
+    } catch (err) {
+      console.error('Error updating user data:', err);
+      alert("Có lỗi xảy ra khi cập nhật thông tin. Vui lòng thử lại sau!");
+    }
   };
 
   const [isChangePasswordVisible, setIsChangePasswordVisible] = useState(false);
@@ -105,6 +179,90 @@ const AccountInfo = () => {
     });
   };
 
+  const handleImageClick = () => {
+    fileInputRef.current.click();
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Vui lòng chọn file ảnh!');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Kích thước file không được vượt quá 5MB!');
+      return;
+    }
+
+    try {
+      setUploading(true);
+      const storedUserData = localStorage.getItem('userData');
+      const jwtToken = localStorage.getItem('jwtToken');
+      const currentUser = JSON.parse(storedUserData);
+      const userId = currentUser.id || currentUser._id;
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await axios.post(
+        `http://localhost:8080/api/users/${userId}/profile-picture`,
+        formData,
+        {
+          headers: {
+            'Authorization': `Bearer ${jwtToken}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+
+      if (response.data.profilePictureUrl) {
+        setAccountInfo(prev => ({
+          ...prev,
+          profilePicture: response.data.profilePictureUrl
+        }));
+        setInitialAccountInfo(prev => ({
+          ...prev,
+          profilePicture: response.data.profilePictureUrl
+        }));
+        alert('Cập nhật ảnh đại diện thành công!');
+      }
+    } catch (err) {
+      console.error('Error uploading profile picture:', err);
+      alert('Có lỗi xảy ra khi tải lên ảnh đại diện. Vui lòng thử lại!');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="accountinfo-container">
+        <Topbar title="THÔNG TIN TÀI KHOẢN" />
+        <div className="main-content">
+          <div className="loading-message">Đang tải thông tin tài khoản...</div>
+        </div>
+        <FooterComponent />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="accountinfo-container">
+        <Topbar title="THÔNG TIN TÀI KHOẢN" />
+        <div className="main-content">
+          <div className="error-message">{error}</div>
+        </div>
+        <FooterComponent />
+      </div>
+    );
+  }
+
   return (
     <div className="accountinfo-container">
       <Topbar title="THÔNG TIN TÀI KHOẢN" />
@@ -113,13 +271,28 @@ const AccountInfo = () => {
         <div className="left-column">
           <div className="account-info">
             <div className="header-background"></div>
-            <div className="account-avatar">
+            <div className="account-avatar" onClick={handleImageClick} style={{ cursor: 'pointer' }}>
               <img
-                src={AvatarAccount}
+                src={accountInfo.profilePicture}
                 alt="Account Avatar"
                 className="account-image"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = "https://cdn-icons-png.flaticon.com/512/706/706830.png";
+                }}
               />
+              <div className="avatar-overlay">
+                <CameraOutlined />
+                <span>Thay đổi ảnh</span>
+              </div>
             </div>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              accept="image/*"
+              style={{ display: 'none' }}
+            />
           </div>
         </div>
 

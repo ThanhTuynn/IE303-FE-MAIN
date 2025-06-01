@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
+  const navigate = useNavigate();
   // State quản lý dữ liệu form
   const [formData, setFormData] = useState({
     usernameOrEmail: '',
@@ -9,6 +11,7 @@ const Login = () => {
   });
 
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
 
   // Hàm cập nhật state khi input thay đổi
   const handleInputChange = (e) => {
@@ -26,6 +29,7 @@ const Login = () => {
   // Hàm xử lý submit form
   const handleSubmit = async (event) => {
     event.preventDefault(); // Ngăn chặn submit form mặc định
+    setError('');
 
     // Chuẩn bị dữ liệu gửi đi
     // Backend API login của bạn nhận 'username' và 'password'
@@ -55,18 +59,20 @@ const Login = () => {
         // Tùy chọn: lưu thông tin user (không lưu mật khẩu!) để dùng hiển thị trên frontend
         localStorage.setItem('userData', JSON.stringify(result.user));
 
-        alert('Đăng nhập thành công!');
-        // Chuyển hướng đến trang chủ
-        // Lưu ý: Bạn cần cấu hình React Router hoặc tương tự để chuyển hướng
-        window.location.href = '/'; // Ví dụ chuyển hướng đơn giản
-
+        // Kiểm tra role và điều hướng
+        const userRole = result.user.role?.toLowerCase();
+        if (userRole === 'admin') {
+          navigate('/admin/dashboard');
+        } else {
+          navigate('/');
+        }
       } else { // Xử lý lỗi (ví dụ: 401 Unauthorized) hoặc lỗi từ backend trả về
-        alert('Đăng nhập thất bại: ' + (result.error || 'Sai tên đăng nhập hoặc mật khẩu.')); // result.error từ backend login nếu có lỗi
+        setError(result.error || 'Sai tên đăng nhập hoặc mật khẩu.');
       }
 
     } catch (error) {
       console.error('Error during login:', error);
-      alert('Đã xảy ra lỗi kết nối đến server. Vui lòng thử lại.');
+      setError('Đã xảy ra lỗi kết nối đến server. Vui lòng thử lại.');
     }
   };
 
@@ -89,6 +95,11 @@ const Login = () => {
         <div className="w-full md:w-1/2 bg-[#fefcf9] flex items-center justify-center px-6 pt-0 pb-12">
           <div className="w-full max-w-md">
             <h2 className="text-5xl font-bold text-black mb-6 text-left">ĐĂNG NHẬP</h2>
+            {error && (
+              <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                {error}
+              </div>
+            )}
             <form className="space-y-4" onSubmit={handleSubmit}>
               <input
                 type="text" // Đổi từ email sang text để người dùng nhập cả username, email hoặc sdt

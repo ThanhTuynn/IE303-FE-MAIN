@@ -14,12 +14,53 @@
         text-align: center;
 
         .account-avatar {
+          position: relative;
+          display: inline-block;
+
           .account-image {
             width: 200px;
             height: 200px;
             border-radius: 50%;
             object-fit: cover;
             border: 2px solid #ddd;
+            transition: filter 0.3s ease;
+          }
+
+          .avatar-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            cursor: pointer;
+
+            .anticon {
+              font-size: 24px;
+              margin-bottom: 8px;
+            }
+
+            span {
+              font-size: 14px;
+            }
+          }
+
+          &:hover {
+            .avatar-overlay {
+              opacity: 1;
+            }
+
+            .account-image {
+              filter: brightness(0.8);
+            }
           }
         }
       }

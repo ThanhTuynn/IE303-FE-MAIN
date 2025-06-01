@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { SearchOutlined, EditOutlined } from "@ant-design/icons";
 import Topbar from "../../component/TopbarComponent/TopbarComponent";
 import FooterComponent from "../../component/FooterComponent/FooterComponent";
 import "./PromotionManagementPage.scss";
+import axios from 'axios'; // Import axios
 
 const categories = [
   "Happy hour",
@@ -11,449 +12,332 @@ const categories = [
   "Flash sale giờ trưa",
 ];
 
-const menuItemsByCategory = {
-  "Happy hour": [
-    {
-      name: "Bánh mì trứng",
-      price: 25000,
-      discountPrice: 20000,
-      description:
-        "Gồm bánh mì giòn, trứng ốp la thơm ngon, kèm rau sống và đồ chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Bánh mì trứng",
-      price: 25000,
-      discountPrice: 20000,
-      description:
-        "Gồm bánh mì giòn, trứng ốp la thơm ngon, kèm rau sống và đồ chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Bánh mì trứng",
-      price: 25000,
-      discountPrice: 20000,
-      description:
-        "Gồm bánh mì giòn, trứng ốp la thơm ngon, kèm rau sống và đồ chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Bánh mì trứng",
-      price: 25000,
-      discountPrice: 20000,
-      description:
-        "Gồm bánh mì giòn, trứng ốp la thơm ngon, kèm rau sống và đồ chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Bánh mì trứng",
-      price: 25000,
-      discountPrice: 20000,
-      description:
-        "Gồm bánh mì giòn, trứng ốp la thơm ngon, kèm rau sống và đồ chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Bánh mì trứng",
-      price: 25000,
-      discountPrice: 20000,
-      description:
-        "Gồm bánh mì giòn, trứng ốp la thơm ngon, kèm rau sống và đồ chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Bánh mì trứng",
-      price: 25000,
-      discountPrice: 20000,
-      description:
-        "Gồm bánh mì giòn, trứng ốp la thơm ngon, kèm rau sống và đồ chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Bánh mì trứng",
-      price: 25000,
-      discountPrice: 20000,
-      description:
-        "Gồm bánh mì giòn, trứng ốp la thơm ngon, kèm rau sống và đồ chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-  ],
-  "Ưu đãi nóng hổi": [
-    {
-      name: "Xôi thập cẩm",
-      price: 35000,
-      discountPrice: 20000,
-      description:
-        "Gồm xôi dẻo thơm, thịt gà xé mềm, kèm hành phi giòn và dưa chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Xôi thập cẩm",
-      price: 35000,
-      discountPrice: 20000,
-      description:
-        "Gồm xôi dẻo thơm, thịt gà xé mềm, kèm hành phi giòn và dưa chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Xôi thập cẩm",
-      price: 35000,
-      discountPrice: 20000,
-      description:
-        "Gồm xôi dẻo thơm, thịt gà xé mềm, kèm hành phi giòn và dưa chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Xôi thập cẩm",
-      price: 35000,
-      discountPrice: 20000,
-      description:
-        "Gồm xôi dẻo thơm, thịt gà xé mềm, kèm hành phi giòn và dưa chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Xôi thập cẩm",
-      price: 35000,
-      discountPrice: 20000,
-      description:
-        "Gồm xôi dẻo thơm, thịt gà xé mềm, kèm hành phi giòn và dưa chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Xôi thập cẩm",
-      price: 35000,
-      discountPrice: 20000,
-      description:
-        "Gồm xôi dẻo thơm, thịt gà xé mềm, kèm hành phi giòn và dưa chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Xôi thập cẩm",
-      price: 35000,
-      discountPrice: 20000,
-      description:
-        "Gồm xôi dẻo thơm, thịt gà xé mềm, kèm hành phi giòn và dưa chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-  ],
-  "Càng đông càng hời": [
-    {
-      name: "Phở bò",
-      price: 40000,
-      discountPrice: 30000,
-      description:
-        "Phở bò thơm ngon với nước dùng đậm đà, thịt bò mềm và rau thơm.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Phở bò",
-      price: 40000,
-      discountPrice: 30000,
-      description:
-        "Phở bò thơm ngon với nước dùng đậm đà, thịt bò mềm và rau thơm.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Phở bò",
-      price: 40000,
-      discountPrice: 30000,
-      description:
-        "Phở bò thơm ngon với nước dùng đậm đà, thịt bò mềm và rau thơm.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Phở bò",
-      price: 40000,
-      discountPrice: 30000,
-      description:
-        "Phở bò thơm ngon với nước dùng đậm đà, thịt bò mềm và rau thơm.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Phở bò",
-      price: 40000,
-      discountPrice: 30000,
-      description:
-        "Phở bò thơm ngon với nước dùng đậm đà, thịt bò mềm và rau thơm.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-  ],
-  "Flash sale giờ trưa": [
-    {
-      name: "Bánh mì trứng",
-      price: 25000,
-      discountPrice: 20000,
-      description:
-        "Gồm bánh mì giòn, trứng ốp la thơm ngon, kèm rau sống và đồ chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Bánh mì trứng",
-      price: 25000,
-      discountPrice: 20000,
-      description:
-        "Gồm bánh mì giòn, trứng ốp la thơm ngon, kèm rau sống và đồ chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Bánh mì trứng",
-      price: 25000,
-      discountPrice: 20000,
-      description:
-        "Gồm bánh mì giòn, trứng ốp la thơm ngon, kèm rau sống và đồ chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Bánh mì trứng",
-      price: 25000,
-      discountPrice: 20000,
-      description:
-        "Gồm bánh mì giòn, trứng ốp la thơm ngon, kèm rau sống và đồ chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Bánh mì trứng",
-      price: 25000,
-      discountPrice: 20000,
-      description:
-        "Gồm bánh mì giòn, trứng ốp la thơm ngon, kèm rau sống và đồ chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Bánh mì trứng",
-      price: 25000,
-      discountPrice: 20000,
-      description:
-        "Gồm bánh mì giòn, trứng ốp la thơm ngon, kèm rau sống và đồ chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Bánh mì trứng",
-      price: 25000,
-      discountPrice: 20000,
-      description:
-        "Gồm bánh mì giòn, trứng ốp la thơm ngon, kèm rau sống và đồ chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Bánh mì trứng",
-      price: 25000,
-      discountPrice: 20000,
-      description:
-        "Gồm bánh mì giòn, trứng ốp la thơm ngon, kèm rau sống và đồ chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-  ],
-};
-
 const PromotionManagement = () => {
   const [activeCategory, setActiveCategory] = useState(categories[0]);
   const [searchKeyword, setSearchKeyword] = useState("");
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
-  const [newMenuItem, setNewMenuItem] = useState({
-    id: "",
+  // Initial state for new promotion item - will need adjustment for actual promotion structure
+  const [newPromotionItem, setNewPromotionItem] = useState({
     name: "",
     description: "",
-    image: "",
-    price: "",
-    discountPrice: "",
-    category: categories[0],
+    type: "PERCENTAGE", // Default type
+    value: "", // Changed from discountPercentage to value
+    startDate: "",
+    endDate: "",
+    active: true,
+    applicableFoodIds: [],
   });
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
-  const [editMenuItem, setEditMenuItem] = useState(null);
+  // Initial state for editing promotion item - will need adjustment
+  const [editPromotionItem, setEditPromotionItem] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
+  // State for fetched data
+  const [foods, setFoods] = useState([]); // To store all foods
+  const [promotions, setPromotions] = useState([]); // To store all promotions
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch all foods and promotions when component mounts
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    const token = localStorage.getItem('jwtToken');
+    if (!token) {
+      setError("No authentication token found. Please log in.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // Fetch Foods
+      const foodsResponse = await axios.get('http://localhost:8080/api/foods', {
+         headers: {
+           'Authorization': `Bearer ${token}`
+         }
+      });
+      console.log('Fetched foods:', foodsResponse.data);
+      setFoods(foodsResponse.data);
+
+      // Fetch Promotions
+      const promotionsResponse = await axios.get('http://localhost:8080/api/promotions', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      console.log('Fetched promotions:', promotionsResponse.data);
+      setPromotions(promotionsResponse.data); // Set the fetched promotions
+
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError("Failed to load data. Please try again.");
+      setFoods([]);
+      setPromotions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCategoryChange = (category) => {
-    setActiveCategory(category);
+    setActiveCategory(category); // This will now likely filter promotions by type
   };
 
   const handleSearchChange = (e) => {
     setSearchKeyword(e.target.value);
   };
 
-  const filteredMenuItems =
-    menuItemsByCategory[activeCategory]?.filter((item) =>
-      item.name.toLowerCase().includes(searchKeyword.toLowerCase())
-    ) || [];
+  // Filter promotions based on active category and search keyword
+  const filteredPromotions = promotions.filter((promotion) => {
+    console.log('Filtering promotion:', promotion);
+    // Remove category filtering since promotions don't have categories
+    const searchMatch = searchKeyword
+      ? promotion.name.toLowerCase().includes(searchKeyword.toLowerCase()) ||
+        (promotion.description && promotion.description.toLowerCase().includes(searchKeyword.toLowerCase()))
+      : true;
+    return searchMatch;
+  });
 
+  // Helper function to find foods by their IDs
+  const findFoodsByIds = (foodIds) => {
+      if (!foodIds || foodIds.length === 0) return [];
+      // Ensure foodIds from promotion are handled correctly (they might be strings if stored that way)
+      const foodIdStrings = foodIds.map(String);
+      return foods.filter(food => foodIdStrings.includes(String(food.id)));
+  };
+
+  // The following functions need to be adapted for managing promotions, not menu items
   const handleAddButtonClick = () => {
+    // Logic to open modal for adding a new promotion
     setIsAddModalVisible(true);
+    // Initialize newPromotionItem here with default values
+     setNewPromotionItem({
+      name: "",
+      description: "",
+      type: "PERCENTAGE",
+      value: "",
+      startDate: "",
+      endDate: "",
+      active: true,
+      applicableFoodIds: [],
+    });
+     setImagePreview(null); // Reset image preview for new item if applicable
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setNewMenuItem({ ...newMenuItem, [name]: value });
+    setNewPromotionItem({ ...newPromotionItem, [name]: value });
   };
 
+   // This image upload might be for a promotion banner, not food image
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = () => {
         setImagePreview(reader.result); // Hiển thị ảnh xem trước
-        setNewMenuItem({ ...newMenuItem, image: reader.result }); // Lưu URL ảnh vào state
+        // Decide where to store this image URL - maybe in newPromotionItem?
+        // setNewPromotionItem({ ...newPromotionItem, image: reader.result }); // Example
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleEditImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setEditMenuItem({ ...editMenuItem, image: reader.result }); // Cập nhật hình ảnh trong state
-      };
-      reader.readAsDataURL(file);
+  // This function needs to be adapted to save a NEW PROMOTION, possibly linked to selected foods
+  const handleSaveNewItem = async () => {
+    // Basic validation for promotion fields
+    if (!newPromotionItem.name || !newPromotionItem.value || newPromotionItem.applicableFoodIds.length === 0) {
+        alert("Vui lòng điền đầy đủ thông tin và chọn ít nhất một món ăn áp dụng!");
+        return;
     }
-  };
 
-  const handleSaveNewItem = () => {
-    if (
-      !newMenuItem.id ||
-      !newMenuItem.name ||
-      !newMenuItem.description ||
-      !newMenuItem.image ||
-      !newMenuItem.price ||
-      !newMenuItem.discountPrice
-    ) {
-      alert("Vui lòng điền đầy đủ thông tin!");
+     const token = localStorage.getItem('jwtToken');
+    if (!token) {
+      alert("No authentication token found. Please log in.");
       return;
     }
 
-    // Thêm món ăn mới vào danh mục tương ứng
-    menuItemsByCategory[newMenuItem.category].push({
-      id: newMenuItem.id,
-      name: newMenuItem.name,
-      description: newMenuItem.description,
-      image: newMenuItem.image,
-      price: parseInt(newMenuItem.price),
-      discountPrice: parseInt(newMenuItem.discountPrice),
-    });
+    try {
+        // Construct the promotion data object based on your backend's expected structure
+        const promotionData = {
+            name: newPromotionItem.name,
+            description: newPromotionItem.description,
+            type: newPromotionItem.type,
+            value: parseFloat(newPromotionItem.value), // Ensure correct type
+            startDate: newPromotionItem.startDate ? new Date(newPromotionItem.startDate).toISOString() : null,
+            endDate: newPromotionItem.endDate ? new Date(newPromotionItem.endDate).toISOString() : null,
+            active: newPromotionItem.active,
+            applicableFoodIds: newPromotionItem.applicableFoodIds.map(String),
+        };
 
-    // Đặt lại form và đóng modal
-    setNewMenuItem({
-      id: "",
-      name: "",
-      description: "",
-      image: "",
-      price: "",
-      discountPrice: "",
-      category: categories[0],
-    });
-    setImagePreview(null);
-    setIsAddModalVisible(false);
-    alert("Món ăn đã được thêm thành công!");
+        console.log('Sending promotion data:', promotionData);
+
+        const response = await axios.post('http://localhost:8080/api/promotions', promotionData, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+        });
+
+        console.log('Promotion created:', response.data);
+        fetchData();
+        alert("Khuyến mãi đã được thêm thành công!");
+        setIsAddModalVisible(false);
+        setNewPromotionItem({
+            name: "", description: "", type: "PERCENTAGE", value: "", startDate: "", endDate: "", active: true, applicableFoodIds: [],
+        });
+        setImagePreview(null);
+
+    } catch (err) {
+        console.error('Error adding promotion:', err.response ? err.response.data : err.message);
+        alert("Failed to add promotion. Please try again.");
+    }
+
   };
 
   const handleCancelAdd = () => {
     setIsAddModalVisible(false);
-    setNewMenuItem({
-      id: "",
-      name: "",
-      description: "",
-      image: "",
-      price: "",
-      discountPrice: "",
-      category: categories[0],
+    setNewPromotionItem({ // Reset form
+      name: "", description: "", type: "PERCENTAGE", value: "", startDate: "", endDate: "", active: true, applicableFoodIds: [],
     });
     setImagePreview(null);
   };
 
-  const handleEditButtonClick = (item) => {
-    setEditMenuItem(item);
-    setIsEditModalVisible(true);
+  // This function needs to be adapted for editing an existing PROMOTION
+  const handleEditButtonClick = (promotion) => {
+     // Logic to open modal for editing an existing promotion
+     setEditPromotionItem(promotion); // Set the promotion to be edited
+     setIsEditModalVisible(true);
+      // Initialize form fields based on editPromotionItem
+      // Example: setNewPromotionItem({ ...promotion, discountPercentage: String(promotion.discountPercentage) });
   };
 
   const handleEditInputChange = (e) => {
     const { name, value } = e.target;
-    setEditMenuItem({ ...editMenuItem, [name]: value });
+    setEditPromotionItem({ ...editPromotionItem, [name]: value });
   };
 
-  const handleSaveEditItem = () => {
-    if (
-      !editMenuItem.name ||
-      !editMenuItem.description ||
-      !editMenuItem.image ||
-      !editMenuItem.price ||
-      !editMenuItem.discountPrice
-    ) {
-      alert("Vui lòng điền đầy đủ thông tin!");
+   // This image upload might be for a promotion banner
+  const handleEditImageUpload = (e) => {
+      const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        // Decide where to store this image URL - maybe in editPromotionItem?
+        // setEditPromotionItem({ ...editPromotionItem, image: reader.result }); // Example
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // This function needs to be adapted to save changes to an existing PROMOTION
+  const handleSaveEditItem = async () => {
+      // Basic validation
+    if (!editPromotionItem.name || !editPromotionItem.value || editPromotionItem.applicableFoodIds.length === 0) {
+        alert("Vui lòng điền đầy đủ thông tin và chọn ít nhất một món ăn áp dụng!");
+        return;
+    }
+
+     const token = localStorage.getItem('jwtToken');
+    if (!token) {
+      alert("No authentication token found. Please log in.");
       return;
     }
 
-    // Cập nhật món ăn trong danh sách
-    const updatedItems = menuItemsByCategory[activeCategory].map((item) =>
-      item.id === editMenuItem.id ? editMenuItem : item
-    );
-    menuItemsByCategory[activeCategory] = updatedItems;
+    try {
+        // Construct the updated promotion data object
+        const updatedPromotionData = {
+            id: editPromotionItem.id,
+            name: editPromotionItem.name,
+            description: editPromotionItem.description,
+            type: editPromotionItem.type,
+            value: parseFloat(editPromotionItem.value),
+            startDate: editPromotionItem.startDate ? new Date(editPromotionItem.startDate).toISOString() : null,
+            endDate: editPromotionItem.endDate ? new Date(editPromotionItem.endDate).toISOString() : null,
+            active: editPromotionItem.active,
+            applicableFoodIds: editPromotionItem.applicableFoodIds.map(String),
+        };
 
-    setIsEditModalVisible(false);
-    setEditMenuItem(null);
-    alert("Món ăn đã được cập nhật thành công!");
+        console.log('Sending updated promotion data:', updatedPromotionData);
+
+        const response = await axios.patch(`http://localhost:8080/api/promotions/${editPromotionItem.id}`, updatedPromotionData, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+        });
+
+        console.log('Promotion updated:', response.data);
+        fetchData();
+        alert("Khuyến mãi đã được cập nhật thành công!");
+        setIsEditModalVisible(false);
+        setEditPromotionItem(null);
+
+    } catch (err) {
+        console.error('Error updating promotion:', err.response ? err.response.data : err.message);
+        alert("Failed to update promotion. Please try again.");
+    }
+
   };
 
   const handleCancelEdit = () => {
     setIsEditModalVisible(false);
-    setEditMenuItem(null);
+    setEditPromotionItem(null);
   };
+
+  // Display loading or error state
+  if (loading) {
+    return (
+      <div className="promotion-container">
+        <Topbar title="QUẢN LÝ KHUYẾN MÃI" />
+        <div className="main-content">
+          <p>Đang tải dữ liệu...</p> {/* Updated loading message */}
+        </div>
+        <FooterComponent />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="promotion-container">
+        <Topbar title="QUẢN LÝ KHUYẾN MÃI" />
+        <div className="main-content">
+          <p style={{ color: 'red' }}>Lỗi: {error}</p>
+        </div>
+        <FooterComponent />
+      </div>
+    );
+  }
 
   return (
     <div className="promotion-container">
       <Topbar title="QUẢN LÝ KHUYẾN MÃI" />
       <div className="main-content">
-        {/* Thanh tìm kiếm và bộ lọc */}
         <div className="promotion-filter-bar">
-          {/* Phần bên trái */}
           <div className="filter-left">
             <div className="filter-item">
               <SearchOutlined />
               <input
                 type="text"
-                placeholder="Tìm kiếm"
+                placeholder="Tìm kiếm khuyến mãi..." // Updated placeholder
                 value={searchKeyword}
                 onChange={handleSearchChange}
               />
             </div>
           </div>
-
-          {/* Phần bên phải */}
           <div className="filter-right">
-            <button className="add-button" onClick={handleAddButtonClick}>
-              + Thêm
+             <button className="add-button" onClick={handleAddButtonClick}>
+              + Thêm Khuyến Mãi
             </button>
           </div>
         </div>
 
         <div className="promotion-menu-container">
+           {/* Categories bar for filtering promotions */}
           <div className="promotion-menu-categories">
             {categories.map((category) => (
               <button
@@ -467,89 +351,119 @@ const PromotionManagement = () => {
               </button>
             ))}
           </div>
+          {/* Display fetched and filtered promotions and their associated foods */}
+          <div className="promotion-list">
+            {filteredPromotions.length === 0 && searchKeyword === "" ? (
+                <p>Chưa có khuyến mãi nào được tạo.</p>
+            ) : filteredPromotions.length === 0 && searchKeyword !== "" ? (
+                 <p>Không tìm thấy khuyến mãi nào phù hợp với từ khóa "{searchKeyword}".</p>
+            ) : (
+              filteredPromotions.map((promotion) => (
+                 <div key={promotion.id} className="promotion-item">
+                   <h3>{promotion.name}</h3>
+                   <p>{promotion.description}</p>
+                   {promotion.type === "PERCENTAGE" && (
+                     <p>Giảm giá: {promotion.value}%</p>
+                   )}
+                   {promotion.type === "FIXED_AMOUNT" && (
+                     <p>Giảm giá: {promotion.value.toLocaleString()} VND</p>
+                   )}
+                   {promotion.startDate && <p>Từ ngày: {new Date(promotion.startDate).toLocaleDateString()}</p>}
+                   {promotion.endDate && <p>Đến ngày: {new Date(promotion.endDate).toLocaleDateString()}</p>}
+                   <p>Trạng thái: {promotion.active ? "Đang áp dụng" : "Đã kết thúc"}</p>
 
-          <div className="promotion-menu-grid">
-            {menuItemsByCategory[activeCategory].map((item, index) => (
-              <div key={index} className="promotion-menu-item">
-                <img src={item.image} alt={item.name} className="item-image" />
-                <div className="item-info">
-                  <h3 className="item-name">{item.name}</h3>
-                  <div className="item-prices">
-                    <span className="discount-price">
-                      {item.discountPrice.toLocaleString()} VND
-                    </span>
-                    <span className="original-price">
-                      {item.price.toLocaleString()} VND
-                    </span>
-                  </div>
-                  <p className="item-description">{item.description}</p>
-                </div>
-                <button
-                  className="edit-button"
-                  onClick={() => handleEditButtonClick(item)}
-                >
-                  <EditOutlined /> Sửa món ăn
-                </button>
-              </div>
-            ))}
+                   <h4>Các món áp dụng:</h4>
+                   <div className="applicable-foods-grid">
+                       {findFoodsByIds(promotion.applicableFoodIds).map(food => (
+                           <div key={food.id} className="food-item-small">
+                                <img src={food.image} alt={food.name} />
+                                <p>{food.name}</p>
+                                <p className="original-price">{food.price.toLocaleString()} VND</p>
+                                {promotion.type === "PERCENTAGE" && (
+                                  <p className="discount-price">
+                                    {(food.price * (1 - promotion.value / 100)).toLocaleString()} VND
+                                  </p>
+                                )}
+                                {promotion.type === "FIXED_AMOUNT" && (
+                                  <p className="discount-price">
+                                    {Math.max(0, food.price - promotion.value).toLocaleString()} VND
+                                  </p>
+                                )}
+                           </div>
+                       ))}
+                        {findFoodsByIds(promotion.applicableFoodIds).length === 0 && (
+                            <p>Chưa có món ăn nào được áp dụng khuyến mãi này.</p>
+                        )}
+                   </div>
+
+                    <div className="promotion-actions">
+                         <button className="edit-button" onClick={() => handleEditButtonClick(promotion)}>
+                             <EditOutlined /> Sửa Khuyến Mãi
+                         </button>
+                    </div>
+                 </div>
+              ))
+            )}
           </div>
         </div>
 
-        {/* Modal sửa món ăn */}
+        {/* Modal sửa khuyến mãi */}
         {isEditModalVisible && (
           <div className="edit-modal">
             <div className="modal-content">
-              <h3 style={{ color: "#b71c1c", fontSize: "24px" }}>Sửa món ăn</h3>
-              <div className="form-group">
-                <label>Tên món ăn</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={editMenuItem.name}
-                  onChange={handleEditInputChange}
-                />
-              </div>
-              <div className="form-group">
-                <label>Mô tả món ăn</label>
-                <textarea
-                  name="description"
-                  value={editMenuItem.description}
-                  onChange={handleEditInputChange}
-                ></textarea>
-              </div>
-              <div className="form-group">
-                <label>Hình ảnh</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleEditImageUpload}
-                />
-                {editMenuItem.image && (
-                  <img
-                    src={editMenuItem.image}
-                    alt="Preview"
-                    className="image-preview"
-                  />
-                )}
-              </div>
-              <div className="form-group">
-                <label>Giá</label>
-                <input
-                  type="number"
-                  name="price"
-                  value={editMenuItem.price}
-                  onChange={handleEditInputChange}
-                />
-              </div>
-              <div className="form-group">
-                <label>Giá khuyến mãi</label>
-                <input
-                  type="number"
-                  name="discountPrice"
-                  value={editMenuItem.discountPrice}
-                  onChange={handleEditInputChange}
-                />
-              </div>
+              <h3 style={{ color: "#b71c1c", fontSize: "24px" }}>Sửa Khuyến Mãi</h3>
+               <div className="form-group"><label>Tên Khuyến Mãi</label><input type="text" name="name" value={editPromotionItem?.name || ''} onChange={handleEditInputChange} /></div>
+               <div className="form-group"><label>Mô tả</label><textarea name="description" value={editPromotionItem?.description || ''} onChange={handleEditInputChange}></textarea></div>
+               <div className="form-group">
+                 <label>Loại khuyến mãi</label>
+                 <select name="type" value={editPromotionItem?.type || 'PERCENTAGE'} onChange={handleEditInputChange}>
+                   <option value="PERCENTAGE">Giảm giá theo phần trăm</option>
+                   <option value="FIXED_AMOUNT">Giảm giá cố định</option>
+                 </select>
+               </div>
+               <div className="form-group">
+                 <label>{editPromotionItem?.type === 'FIXED_AMOUNT' ? 'Số tiền giảm (VND)' : 'Phần trăm giảm giá (%)'}</label>
+                 <input type="number" name="value" value={editPromotionItem?.value || ''} onChange={handleEditInputChange} />
+               </div>
+               <div className="form-group"><label>Ngày bắt đầu</label><input type="date" name="startDate" value={editPromotionItem?.startDate ? editPromotionItem.startDate.substring(0, 10) : ''} onChange={handleEditInputChange} /></div>
+               <div className="form-group"><label>Ngày kết thúc</label><input type="date" name="endDate" value={editPromotionItem?.endDate ? editPromotionItem.endDate.substring(0, 10) : ''} onChange={handleEditInputChange} /></div>
+               <div className="form-group">
+                 <label>Trạng thái</label>
+                 <select name="active" value={editPromotionItem?.active ? 'true' : 'false'} onChange={handleEditInputChange}>
+                   <option value="true">Đang áp dụng</option>
+                   <option value="false">Đã kết thúc</option>
+                 </select>
+               </div>
+               {/* Applicable Foods selection needed here */}
+               <div className="form-group">
+                  <label>Chọn món ăn áp dụng khuyến mãi</label>
+                  <div className="food-selection-grid"> {/* Add a grid for food selection */}
+                    {foods.map(food => (
+                      <div key={food.id} className="food-selection-item">
+                        <input
+                          type="checkbox"
+                          id={`food-${food.id}-edit`}
+                          value={food.id}
+                          checked={editPromotionItem?.applicableFoodIds?.includes(String(food.id)) || false} // Check if ID is in the array
+                          onChange={(e) => {
+                            const foodId = String(e.target.value);
+                            setEditPromotionItem(prevState => ({
+                              ...prevState,
+                              applicableFoodIds: e.target.checked
+                                ? [...(prevState?.applicableFoodIds || []), foodId]
+                                : (prevState?.applicableFoodIds || []).filter(id => id !== foodId)
+                            }));
+                          }}
+                        />
+                        <label htmlFor={`food-${food.id}-edit`}>
+                           <img src={food.image} alt={food.name} className="food-selection-image" /> {/* Optional: show image */}
+                          {food.name}
+                        </label>
+                      </div>
+                    ))}
+                     {foods.length === 0 && <p>Không tìm thấy món ăn nào để áp dụng khuyến mãi.</p>}
+                  </div>
+               </div>
               <div className="modal-actions">
                 <button onClick={handleCancelEdit}>Hủy</button>
                 <button onClick={handleSaveEditItem}>Lưu</button>
@@ -558,90 +472,60 @@ const PromotionManagement = () => {
           </div>
         )}
 
-        {/* Modal thêm món ăn */}
+        {/* Modal thêm khuyến mãi */}
         {isAddModalVisible && (
           <div className="add-modal">
             <div className="modal-content">
-              <h3 style={{ color: "#b71c1c", fontSize: "24px" }}>
-                Thêm khuyến mãi mới
-              </h3>
-              <div className="form-group">
-                <label>Mã số món ăn</label>
-                <input
-                  type="text"
-                  name="id"
-                  value={newMenuItem.id}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="form-group">
-                <label>Tên món ăn</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={newMenuItem.name}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="form-group">
-                <label>Mô tả món ăn</label>
-                <textarea
-                  name="description"
-                  value={newMenuItem.description}
-                  onChange={handleInputChange}
-                ></textarea>
-              </div>
-              <div className="form-group">
-                <label>Hình ảnh</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                />
-                {imagePreview && (
-                  <img
-                    src={imagePreview}
-                    alt="Preview"
-                    className="image-preview"
-                  />
-                )}
-              </div>
-              <div className="form-group">
-                <label>Giá</label>
-                <input
-                  type="number"
-                  name="price"
-                  value={newMenuItem.price}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="form-group">
-                <label>Giá khuyến mãi</label>
-                <input
-                  type="number"
-                  name="discountPrice"
-                  value={newMenuItem.discountPrice}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="form-group">
-                <label>Phân loại</label>
-                <select
-                  name="category"
-                  value={newMenuItem.category}
-                  onChange={handleInputChange}
-                >
-                  {categories.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="modal-actions">
-                <button onClick={handleCancelAdd}>Hủy</button>
-                <button onClick={handleSaveNewItem}>Lưu</button>
-              </div>
+              <h3 style={{ color: "#b71c1c", fontSize: "24px" }}>Thêm Khuyến Mãi Mới</h3>
+               <div className="form-group"><label>Tên Khuyến Mãi</label><input type="text" name="name" value={newPromotionItem.name} onChange={handleInputChange} /></div>
+               <div className="form-group"><label>Mô tả</label><textarea name="description" value={newPromotionItem.description} onChange={handleInputChange}></textarea></div>
+               <div className="form-group">
+                 <label>Loại khuyến mãi</label>
+                 <select name="type" value={newPromotionItem.type} onChange={handleInputChange}>
+                   <option value="PERCENTAGE">Giảm giá theo phần trăm</option>
+                   <option value="FIXED_AMOUNT">Giảm giá cố định</option>
+                 </select>
+               </div>
+               <div className="form-group">
+                 <label>{newPromotionItem.type === 'FIXED_AMOUNT' ? 'Số tiền giảm (VND)' : 'Phần trăm giảm giá (%)'}</label>
+                 <input type="number" name="value" value={newPromotionItem.value} onChange={handleInputChange} />
+               </div>
+               <div className="form-group"><label>Ngày bắt đầu</label><input type="date" name="startDate" value={newPromotionItem.startDate} onChange={handleInputChange} /></div>
+               <div className="form-group"><label>Ngày kết thúc</label><input type="date" name="endDate" value={newPromotionItem.endDate} onChange={handleInputChange} /></div>
+               {/* Applicable Foods selection needed here */}
+               <div className="form-group">
+                 <label>Chọn món ăn áp dụng khuyến mãi</label>
+                 <div className="food-selection-grid"> {/* Add a grid for food selection */}
+                   {foods.map(food => (
+                     <div key={food.id} className="food-selection-item">
+                       <input
+                         type="checkbox"
+                         id={`food-${food.id}-add`}
+                         value={food.id}
+                         checked={newPromotionItem.applicableFoodIds.includes(String(food.id))} // Check if ID is in the array
+                         onChange={(e) => {
+                           const foodId = String(e.target.value); // Ensure ID is string for consistency
+                           setNewPromotionItem(prevState => ({
+                             ...prevState,
+                             applicableFoodIds: e.target.checked
+                               ? [...prevState.applicableFoodIds, foodId]
+                               : prevState.applicableFoodIds.filter(id => id !== foodId)
+                           }));
+                         }}
+                       />
+                       <label htmlFor={`food-${food.id}-add`}>
+                          <img src={food.image} alt={food.name} className="food-selection-image" /> {/* Optional: show image */}
+                         {food.name}
+                       </label>
+                     </div>
+                   ))}
+                   {foods.length === 0 && <p>Không tìm thấy món ăn nào để áp dụng khuyến mãi.</p>}
+                 </div>
+               </div>
+               <div className="modal-actions">
+                 <button onClick={handleCancelAdd}>Hủy</button>
+                 <button onClick={handleSaveNewItem}>Lưu</button>
+               </div>
             </div>
           </div>
         )}

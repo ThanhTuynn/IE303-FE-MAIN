@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { SearchOutlined, EditOutlined } from "@ant-design/icons";
 import Topbar from "../../component/TopbarComponent/TopbarComponent";
 import FooterComponent from "../../component/FooterComponent/FooterComponent";
 import "./FoodManagementPage.scss";
+import axios from 'axios';
 
 const categories = [
   "Bữa sáng tiện lợi",
@@ -12,297 +13,11 @@ const categories = [
   "Combo tiện lợi",
 ];
 
-const menuItems = {
-  "Bữa sáng tiện lợi": [
-    {
-      name: "Bánh mì trứng",
-      price: 25000,
-      discountPrice: 20000,
-      description:
-        "Gồm bánh mì giòn, trứng ốp la thơm ngon, kèm rau sống và đồ chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Bánh mì trứng",
-      price: 25000,
-      discountPrice: 20000,
-      description:
-        "Gồm bánh mì giòn, trứng ốp la thơm ngon, kèm rau sống và đồ chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Bánh mì trứng",
-      price: 25000,
-      discountPrice: 20000,
-      description:
-        "Gồm bánh mì giòn, trứng ốp la thơm ngon, kèm rau sống và đồ chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Bánh mì trứng",
-      price: 25000,
-      discountPrice: 20000,
-      description:
-        "Gồm bánh mì giòn, trứng ốp la thơm ngon, kèm rau sống và đồ chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Bánh mì trứng",
-      price: 25000,
-      discountPrice: 20000,
-      description:
-        "Gồm bánh mì giòn, trứng ốp la thơm ngon, kèm rau sống và đồ chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Bánh mì trứng",
-      price: 25000,
-      discountPrice: 20000,
-      description:
-        "Gồm bánh mì giòn, trứng ốp la thơm ngon, kèm rau sống và đồ chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Bánh mì trứng",
-      price: 25000,
-      discountPrice: 20000,
-      description:
-        "Gồm bánh mì giòn, trứng ốp la thơm ngon, kèm rau sống và đồ chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Bánh mì trứng",
-      price: 25000,
-      discountPrice: 20000,
-      description:
-        "Gồm bánh mì giòn, trứng ốp la thơm ngon, kèm rau sống và đồ chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Bánh mì trứng",
-      price: 25000,
-      discountPrice: 20000,
-      description:
-        "Gồm bánh mì giòn, trứng ốp la thơm ngon, kèm rau sống và đồ chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-  ],
-  "Bữa trưa dinh dưỡng": [
-    {
-      name: "Xôi thập cẩm",
-      price: 35000,
-      discountPrice: 20000,
-      description:
-        "Gồm xôi dẻo thơm, thịt gà xé mềm, kèm hành phi giòn và dưa chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Xôi thập cẩm",
-      price: 35000,
-      discountPrice: 20000,
-      description:
-        "Gồm xôi dẻo thơm, thịt gà xé mềm, kèm hành phi giòn và dưa chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Xôi thập cẩm",
-      price: 35000,
-      discountPrice: 20000,
-      description:
-        "Gồm xôi dẻo thơm, thịt gà xé mềm, kèm hành phi giòn và dưa chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Xôi thập cẩm",
-      price: 35000,
-      discountPrice: 20000,
-      description:
-        "Gồm xôi dẻo thơm, thịt gà xé mềm, kèm hành phi giòn và dưa chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Xôi thập cẩm",
-      price: 35000,
-      discountPrice: 20000,
-      description:
-        "Gồm xôi dẻo thơm, thịt gà xé mềm, kèm hành phi giòn và dưa chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Xôi thập cẩm",
-      price: 35000,
-      discountPrice: 20000,
-      description:
-        "Gồm xôi dẻo thơm, thịt gà xé mềm, kèm hành phi giòn và dưa chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Xôi thập cẩm",
-      price: 35000,
-      discountPrice: 20000,
-      description:
-        "Gồm xôi dẻo thơm, thịt gà xé mềm, kèm hành phi giòn và dưa chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Xôi thập cẩm",
-      price: 35000,
-      discountPrice: 20000,
-      description:
-        "Gồm xôi dẻo thơm, thịt gà xé mềm, kèm hành phi giòn và dưa chua.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-  ],
-  "Snack bar": [
-    {
-      name: "Phở bò",
-      price: 40000,
-      discountPrice: 30000,
-      description:
-        "Phở bò thơm ngon với nước dùng đậm đà, thịt bò mềm và rau thơm.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Phở bò",
-      price: 40000,
-      discountPrice: 30000,
-      description:
-        "Phở bò thơm ngon với nước dùng đậm đà, thịt bò mềm và rau thơm.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Phở bò",
-      price: 40000,
-      discountPrice: 30000,
-      description:
-        "Phở bò thơm ngon với nước dùng đậm đà, thịt bò mềm và rau thơm.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Phở bò",
-      price: 40000,
-      discountPrice: 30000,
-      description:
-        "Phở bò thơm ngon với nước dùng đậm đà, thịt bò mềm và rau thơm.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Phở bò",
-      price: 40000,
-      discountPrice: 30000,
-      description:
-        "Phở bò thơm ngon với nước dùng đậm đà, thịt bò mềm và rau thơm.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Phở bò",
-      price: 40000,
-      discountPrice: 30000,
-      description:
-        "Phở bò thơm ngon với nước dùng đậm đà, thịt bò mềm và rau thơm.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Phở bò",
-      price: 40000,
-      discountPrice: 30000,
-      description:
-        "Phở bò thơm ngon với nước dùng đậm đà, thịt bò mềm và rau thơm.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Phở bò",
-      price: 40000,
-      discountPrice: 30000,
-      description:
-        "Phở bò thơm ngon với nước dùng đậm đà, thịt bò mềm và rau thơm.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-  ],
-  "Đồ uống tươi mát": [
-    {
-      name: "Trà sữa trân châu",
-      price: 30000,
-      description: "Trà sữa thơm ngon với trân châu dẻo dai.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Trà sữa trân châu",
-      price: 30000,
-      description: "Trà sữa thơm ngon với trân châu dẻo dai.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Trà sữa trân châu",
-      price: 30000,
-      description: "Trà sữa thơm ngon với trân châu dẻo dai.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Trà sữa trân châu",
-      price: 30000,
-      description: "Trà sữa thơm ngon với trân châu dẻo dai.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Trà sữa trân châu",
-      price: 30000,
-      description: "Trà sữa thơm ngon với trân châu dẻo dai.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Trà sữa trân châu",
-      price: 30000,
-      description: "Trà sữa thơm ngon với trân châu dẻo dai.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-    {
-      name: "Trà sữa trân châu",
-      price: 30000,
-      description: "Trà sữa thơm ngon với trân châu dẻo dai.",
-      image:
-        "https://i.ex-cdn.com/vntravellive.com/files/news/2023/05/15/luu-ngay-5-quan-banh-mi-ngon-nen-thu-tai-sai-gon-151953.jpg",
-    },
-  ],
-};
-
 const FoodManagement = () => {
-  const [activeCategory, setActiveCategory] = useState(categories[0]); // Danh mục hiện tại
+  const [activeCategory, setActiveCategory] = useState(categories[0]);
   const [searchKeyword, setSearchKeyword] = useState("");
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [newMenuItem, setNewMenuItem] = useState({
-    id: "",
     name: "",
     description: "",
     image: "",
@@ -312,6 +27,40 @@ const FoodManagement = () => {
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editMenuItem, setEditMenuItem] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [foods, setFoods] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch dữ liệu món ăn khi component mount
+  useEffect(() => {
+    fetchFoods();
+  }, []);
+
+  const fetchFoods = async () => {
+    const token = localStorage.getItem('jwtToken');
+    if (!token) {
+      setError("No authentication token found. Please log in.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await axios.get('http://localhost:8080/api/foods', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      setFoods(response.data);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching foods:', err);
+      setError("Failed to load food data. Please try again.");
+      setFoods([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleCategoryChange = (category) => {
     setActiveCategory(category);
@@ -321,8 +70,14 @@ const FoodManagement = () => {
     setSearchKeyword(e.target.value);
   };
 
-  // Lọc danh sách món ăn theo danh mục
-  const filteredMenuItems = menuItems[activeCategory] || [];
+  // Lọc danh sách món ăn theo danh mục và từ khóa tìm kiếm
+  const filteredMenuItems = foods.filter((item) => {
+    const categoryMatch = activeCategory ? item.category === activeCategory : true;
+    const searchMatch = searchKeyword
+      ? item.name.toLowerCase().includes(searchKeyword.toLowerCase())
+      : true;
+    return categoryMatch && searchMatch;
+  });
 
   const handleAddButtonClick = () => {
     setIsAddModalVisible(true);
@@ -338,8 +93,8 @@ const FoodManagement = () => {
     if (file) {
       const reader = new FileReader();
       reader.onload = () => {
-        setImagePreview(reader.result); // Hiển thị ảnh xem trước
-        setNewMenuItem({ ...newMenuItem, image: reader.result }); // Lưu URL ảnh vào state
+        setImagePreview(reader.result);
+        setNewMenuItem({ ...newMenuItem, image: reader.result });
       };
       reader.readAsDataURL(file);
     }
@@ -350,51 +105,71 @@ const FoodManagement = () => {
     if (file) {
       const reader = new FileReader();
       reader.onload = () => {
-        setEditMenuItem({ ...editMenuItem, image: reader.result }); // Cập nhật hình ảnh trong state
+        setEditMenuItem({ ...editMenuItem, image: reader.result });
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleSaveNewItem = () => {
+  const handleSaveNewItem = async () => {
     if (
-      !newMenuItem.id ||
       !newMenuItem.name ||
       !newMenuItem.description ||
       !newMenuItem.image ||
-      !newMenuItem.price
+      !newMenuItem.price ||
+      !newMenuItem.category
     ) {
       alert("Vui lòng điền đầy đủ thông tin!");
       return;
     }
 
-    // Thêm món ăn mới vào danh mục tương ứng
-    menuItems[newMenuItem.category].push({
-      id: newMenuItem.id,
-      name: newMenuItem.name,
-      description: newMenuItem.description,
-      image: newMenuItem.image,
-      price: parseInt(newMenuItem.price),
-    });
+    const token = localStorage.getItem('jwtToken');
+    if (!token) {
+      alert("No authentication token found. Please log in.");
+      return;
+    }
 
-    // Đặt lại form và đóng modal
-    setNewMenuItem({
-      id: "",
-      name: "",
-      description: "",
-      image: "",
-      price: "",
-      category: categories[0],
-    });
-    setImagePreview(null);
-    setIsAddModalVisible(false);
-    alert("Món ăn đã được thêm thành công!");
+    try {
+      const foodData = {
+        name: newMenuItem.name,
+        description: newMenuItem.description,
+        image: newMenuItem.image,
+        price: parseFloat(newMenuItem.price),
+        category: newMenuItem.category,
+        ingredients: [],
+        available: true,
+      };
+
+      const response = await axios.post('http://localhost:8080/api/foods', foodData, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const createdFood = response.data;
+      setFoods([...foods, createdFood]);
+
+      setNewMenuItem({
+        name: "",
+        description: "",
+        image: "",
+        price: "",
+        category: categories[0],
+      });
+      setImagePreview(null);
+      setIsAddModalVisible(false);
+      alert("Món ăn đã được thêm thành công!");
+
+    } catch (err) {
+      console.error('Error adding food item:', err.response ? err.response.data : err.message);
+      alert("Failed to add food item. Please try again.");
+    }
   };
 
   const handleCancelAdd = () => {
     setIsAddModalVisible(false);
     setNewMenuItem({
-      id: "",
       name: "",
       description: "",
       image: "",
@@ -414,26 +189,61 @@ const FoodManagement = () => {
     setEditMenuItem({ ...editMenuItem, [name]: value });
   };
 
-  const handleSaveEditItem = () => {
+  const handleSaveEditItem = async () => {
     if (
       !editMenuItem.name ||
       !editMenuItem.description ||
       !editMenuItem.image ||
-      !editMenuItem.price
+      !editMenuItem.price ||
+      !editMenuItem.category
     ) {
       alert("Vui lòng điền đầy đủ thông tin!");
       return;
     }
 
-    // Cập nhật món ăn trong danh sách
-    const updatedItems = menuItems[activeCategory].map((item) =>
-      item.id === editMenuItem.id ? editMenuItem : item
-    );
-    menuItems[activeCategory] = updatedItems;
+    const token = localStorage.getItem('jwtToken');
+    if (!token) {
+      alert("No authentication token found. Please log in.");
+      return;
+    }
 
-    setIsEditModalVisible(false);
-    setEditMenuItem(null);
-    alert("Món ăn đã được cập nhật thành công!");
+    try {
+      // Prepare data for update, ensuring all required fields are included
+      const updatedFoodData = {
+        id: editMenuItem.id, // Ensure ID is included
+        name: editMenuItem.name,
+        description: editMenuItem.description,
+        image: editMenuItem.image,
+        price: parseFloat(editMenuItem.price),
+        category: editMenuItem.category,
+        ingredients: editMenuItem.ingredients || [], // Include ingredients, default to empty array if not present
+        available: editMenuItem.available !== undefined ? editMenuItem.available : true, // Include available, default to true if not present
+      };
+
+      // Log the data being sent for debugging
+      console.log('Sending update request for food ID:', editMenuItem.id);
+      console.log('Update data:', updatedFoodData);
+
+      const response = await axios.patch(`http://localhost:8080/api/foods/${editMenuItem.id}`, updatedFoodData, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const updatedFood = response.data;
+      setFoods(foods.map(food => 
+        food.id === updatedFood.id ? updatedFood : food
+      ));
+
+      setIsEditModalVisible(false);
+      setEditMenuItem(null);
+      alert("Món ăn đã được cập nhật thành công!");
+
+    } catch (err) {
+      console.error('Error updating food item:', err.response ? err.response.data : err.message);
+      alert("Failed to update food item. Please try again.");
+    }
   };
 
   const handleCancelEdit = () => {
@@ -441,13 +251,35 @@ const FoodManagement = () => {
     setEditMenuItem(null);
   };
 
+  if (loading) {
+    return (
+      <div className="food-container">
+        <Topbar title="QUẢN LÝ MÓN ĂN" />
+        <div className="main-content">
+          <p>Đang tải món ăn...</p>
+        </div>
+        <FooterComponent />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="food-container">
+        <Topbar title="QUẢN LÝ MÓN ĂN" />
+        <div className="main-content">
+          <p style={{ color: 'red' }}>Lỗi: {error}</p>
+        </div>
+        <FooterComponent />
+      </div>
+    );
+  }
+
   return (
     <div className="food-container">
       <Topbar title="QUẢN LÝ MÓN ĂN" />
       <div className="main-content">
-        {/* Thanh tìm kiếm và bộ lọc */}
         <div className="filter-bar">
-          {/* Phần bên trái */}
           <div className="filter-left">
             <div className="filter-item">
               <SearchOutlined />
@@ -459,8 +291,6 @@ const FoodManagement = () => {
               />
             </div>
           </div>
-
-          {/* Phần bên phải */}
           <div className="filter-right">
             <button className="add-button" onClick={handleAddButtonClick}>
               + Thêm
@@ -469,14 +299,11 @@ const FoodManagement = () => {
         </div>
 
         <div className="menu-container">
-          {/* Danh mục món ăn */}
           <div className="menu-categories">
             {categories.map((category) => (
               <button
                 key={category}
-                className={`category ${
-                  activeCategory === category ? "active" : ""
-                }`}
+                className={`category ${activeCategory === category ? "active" : ""}`}
                 onClick={() => handleCategoryChange(category)}
               >
                 {category}
@@ -484,8 +311,8 @@ const FoodManagement = () => {
             ))}
           </div>
           <div className="menu-grid">
-            {menuItems[activeCategory].map((item, index) => (
-              <div key={index} className="menu-item">
+            {filteredMenuItems.map((item) => (
+              <div key={item.id} className="menu-item">
                 <img src={item.image} alt={item.name} className="item-image" />
                 <div className="item-info">
                   <h3 className="item-name">{item.name}</h3>
@@ -507,7 +334,6 @@ const FoodManagement = () => {
           </div>
         </div>
 
-        {/* Modal sửa món ăn */}
         {isEditModalVisible && (
           <div className="edit-modal">
             <div className="modal-content">
@@ -561,22 +387,12 @@ const FoodManagement = () => {
           </div>
         )}
 
-        {/* Modal thêm món ăn */}
         {isAddModalVisible && (
           <div className="add-modal">
             <div className="modal-content">
               <h3 style={{ color: "#b71c1c", fontSize: "24px" }}>
                 Thêm món ăn mới
               </h3>
-              <div className="form-group">
-                <label>Mã số món ăn</label>
-                <input
-                  type="text"
-                  name="id"
-                  value={newMenuItem.id}
-                  onChange={handleInputChange}
-                />
-              </div>
               <div className="form-group">
                 <label>Tên món ăn</label>
                 <input

@@ -9,12 +9,13 @@ import {
     FaSearch,
     FaHeart,
 } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios"; // Import axios
 import aiRecommendationService from "../services/aiRecommendationService"; // Import AI service
 
 const Menu = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const [foods, setFoods] = useState([]); // State to store fetched food data
     const [loading, setLoading] = useState(true); // State to track loading status
     const [error, setError] = useState(null); // State to track any errors
@@ -22,6 +23,7 @@ const Menu = () => {
     const [search, setSearch] = useState("");
     const [userId, setUserId] = useState(null); // State to store the user ID
     const [favoriteFoodIds, setFavoriteFoodIds] = useState(new Set()); // State to store favorite food IDs
+    const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || null);
 
     // AI Search States
     const [aiRecommendations, setAiRecommendations] = useState([]);
@@ -96,6 +98,13 @@ const Menu = () => {
 
         fetchFoods();
     }, [userId, navigate]); // Rerun effect if userId or navigate changes
+
+    useEffect(() => {
+        const category = searchParams.get('category');
+        if (category) {
+            setSelectedCategory(category);
+        }
+    }, [searchParams]);
 
     const toggleFavourite = async (food) => {
         const token = localStorage.getItem("jwtToken");
@@ -195,7 +204,15 @@ const Menu = () => {
         }
     };
 
-    const filteredFoods = foods.filter((food) => food.name.toLowerCase().includes(search.toLowerCase()));
+    // Filter foods based on selected category and search
+    const filteredFoods = foods.filter((food) => {
+        const categoryMatch = selectedCategory ? food.category === selectedCategory : true;
+        const searchMatch = search
+            ? food.name.toLowerCase().includes(search.toLowerCase()) ||
+              food.description.toLowerCase().includes(search.toLowerCase())
+            : true;
+        return categoryMatch && searchMatch;
+    });
 
     // AI Search Handler
     const handleAiSearch = async (query) => {

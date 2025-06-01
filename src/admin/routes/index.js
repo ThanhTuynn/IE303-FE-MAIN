@@ -6,9 +6,6 @@ import FoodManagement from "../pages/FoodManagementPage/FoodManagementPage";
 import PromotionManagement from "../pages/PromotionManagementPage/PromotionManagementPage";
 import StoreInfo from "../pages/StoreInfoPage/StoreInfoPage";
 import AccountInfo from "../pages/AccountInfoPage/AccountInfoPage";
-import SignIn from "../pages/SignInPage/SignInPage";
-import SignUp from "../pages/SignUpPage/SignUpPage";
-import ForgetPassword from "../pages/ForgetPassword/ForgetPassword";
 
 const routes = [
   {
@@ -45,18 +42,6 @@ const routes = [
     path: "/admin/account-info",
     page: AccountInfo,
     isShowHeader: true,
-  },
-  {
-    path: "/admin/sign-in",
-    page: SignIn,
-  },
-  {
-    path: "/admin/sign-up",
-    page: SignUp,
-  },
-  {
-    path: "/admin/forgot-password",
-    page: ForgetPassword,
   },
   {
     path: "*",

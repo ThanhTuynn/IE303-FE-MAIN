@@ -34,11 +34,11 @@ const Footer = () => {
         <div>
           <h3 className="text-lg font-semibold mb-2">Danh mục món ăn</h3>
           <ul className="space-y-1">
-            <li><Link to="/promotions" className="hover:underline">Ưu đãi nóng hổi</Link></li>
-            <li><Link to="/404" className="hover:underline">Bữa sáng tiện lợi</Link></li>
-            <li><Link to="/404" className="hover:underline">Bữa trưa dinh dưỡng</Link></li>
-             <li><Link to="/404" className="hover:underline">UniFoodie Snack Bar</Link></li>
-            <li><Link to="/404" className="hover:underline">Đồ uống tươi mát</Link></li>
+            <li><Link to="/menu?category=Ưu đãi nóng hổi" className="hover:underline">Ưu đãi nóng hổi</Link></li>
+            <li><Link to="/menu?category=Bữa sáng tiện lợi" className="hover:underline">Bữa sáng tiện lợi</Link></li>
+            <li><Link to="/menu?category=Bữa trưa dinh dưỡng" className="hover:underline">Bữa trưa dinh dưỡng</Link></li>
+            <li><Link to="/menu?category=Snack bar" className="hover:underline">UniFoodie Snack Bar</Link></li>
+            <li><Link to="/menu?category=Đồ uống tươi mát" className="hover:underline">Đồ uống tươi mát</Link></li>
           </ul>
         </div>
 
