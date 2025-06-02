@@ -1,540 +1,763 @@
 import React, { useState, useEffect } from "react";
-import { SearchOutlined, EditOutlined } from "@ant-design/icons";
+import { SearchOutlined, EditOutlined, DeleteOutlined, TagsOutlined, CalendarOutlined } from "@ant-design/icons";
 import Topbar from "../../component/TopbarComponent/TopbarComponent";
 import FooterComponent from "../../component/FooterComponent/FooterComponent";
 import "./PromotionManagementPage.scss";
-import axios from 'axios'; // Import axios
+import axios from "axios";
 
-const categories = [
-  "Happy hour",
-  "Ưu đãi nóng hổi",
-  "Càng đông càng hời",
-  "Flash sale giờ trưa",
-];
+const promotionTypes = ["Tất cả", "Giảm theo phần trăm", "Giảm cố định"];
 
 const PromotionManagement = () => {
-  const [activeCategory, setActiveCategory] = useState(categories[0]);
-  const [searchKeyword, setSearchKeyword] = useState("");
-  const [isAddModalVisible, setIsAddModalVisible] = useState(false);
-  // Initial state for new promotion item - will need adjustment for actual promotion structure
-  const [newPromotionItem, setNewPromotionItem] = useState({
-    name: "",
-    description: "",
-    type: "PERCENTAGE", // Default type
-    value: "", // Changed from discountPercentage to value
-    startDate: "",
-    endDate: "",
-    active: true,
-    applicableFoodIds: [],
-  });
-  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
-  // Initial state for editing promotion item - will need adjustment
-  const [editPromotionItem, setEditPromotionItem] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+    const [activeType, setActiveType] = useState("Tất cả");
+    const [searchKeyword, setSearchKeyword] = useState("");
+    const [isAddModalVisible, setIsAddModalVisible] = useState(false);
+    const [newPromotionItem, setNewPromotionItem] = useState({
+        name: "",
+        description: "",
+        type: "PERCENTAGE",
+        value: "",
+        startDate: "",
+        endDate: "",
+        active: true,
+        applicableFoodIds: [],
+    });
+    const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+    const [editPromotionItem, setEditPromotionItem] = useState(null);
+    const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+    const [promotionToDelete, setPromotionToDelete] = useState(null);
 
-  // State for fetched data
-  const [foods, setFoods] = useState([]); // To store all foods
-  const [promotions, setPromotions] = useState([]); // To store all promotions
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+    // State for fetched data
+    const [foods, setFoods] = useState([]);
+    const [promotions, setPromotions] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-  // Fetch all foods and promotions when component mounts
-  useEffect(() => {
-    fetchData();
-  }, []);
+    useEffect(() => {
+        fetchData();
+    }, []);
 
-  const fetchData = async () => {
-    const token = localStorage.getItem('jwtToken');
-    if (!token) {
-      setError("No authentication token found. Please log in.");
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      // Fetch Foods
-      const foodsResponse = await axios.get('http://localhost:8080/api/foods', {
-         headers: {
-           'Authorization': `Bearer ${token}`
-         }
-      });
-      console.log('Fetched foods:', foodsResponse.data);
-      setFoods(foodsResponse.data);
-
-      // Fetch Promotions
-      const promotionsResponse = await axios.get('http://localhost:8080/api/promotions', {
-        headers: {
-          'Authorization': `Bearer ${token}`
+    const fetchData = async () => {
+        const token = localStorage.getItem("jwtToken");
+        if (!token) {
+            setError("No authentication token found. Please log in.");
+            setLoading(false);
+            return;
         }
-      });
-      console.log('Fetched promotions:', promotionsResponse.data);
-      setPromotions(promotionsResponse.data); // Set the fetched promotions
 
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching data:', err);
-      setError("Failed to load data. Please try again.");
-      setFoods([]);
-      setPromotions([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+        try {
+            setLoading(true);
+            // Fetch Foods
+            const foodsResponse = await axios.get("http://localhost:8080/api/foods", {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            setFoods(foodsResponse.data);
 
-  const handleCategoryChange = (category) => {
-    setActiveCategory(category); // This will now likely filter promotions by type
-  };
+            // Fetch Promotions
+            const promotionsResponse = await axios.get("http://localhost:8080/api/promotions", {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            setPromotions(promotionsResponse.data);
+            setError(null);
+        } catch (err) {
+            setError("Failed to load data. Please try again.");
+            setFoods([]);
+            setPromotions([]);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-  const handleSearchChange = (e) => {
-    setSearchKeyword(e.target.value);
-  };
+    const handleTypeChange = (type) => {
+        setActiveType(type);
+    };
 
-  // Filter promotions based on active category and search keyword
-  const filteredPromotions = promotions.filter((promotion) => {
-    console.log('Filtering promotion:', promotion);
-    // Remove category filtering since promotions don't have categories
-    const searchMatch = searchKeyword
-      ? promotion.name.toLowerCase().includes(searchKeyword.toLowerCase()) ||
-        (promotion.description && promotion.description.toLowerCase().includes(searchKeyword.toLowerCase()))
-      : true;
-    return searchMatch;
-  });
+    const handleSearchChange = (e) => {
+        setSearchKeyword(e.target.value);
+    };
 
-  // Helper function to find foods by their IDs
-  const findFoodsByIds = (foodIds) => {
-      if (!foodIds || foodIds.length === 0) return [];
-      // Ensure foodIds from promotion are handled correctly (they might be strings if stored that way)
-      const foodIdStrings = foodIds.map(String);
-      return foods.filter(food => foodIdStrings.includes(String(food.id)));
-  };
+    // Filter promotions based on type and search keyword
+    const filteredPromotions = promotions.filter((promotion) => {
+        const typeMatch =
+            activeType === "Tất cả" ||
+            (activeType === "Giảm theo phần trăm" && promotion.type === "PERCENTAGE") ||
+            (activeType === "Giảm cố định" && promotion.type === "FIXED_AMOUNT");
 
-  // The following functions need to be adapted for managing promotions, not menu items
-  const handleAddButtonClick = () => {
-    // Logic to open modal for adding a new promotion
-    setIsAddModalVisible(true);
-    // Initialize newPromotionItem here with default values
-     setNewPromotionItem({
-      name: "",
-      description: "",
-      type: "PERCENTAGE",
-      value: "",
-      startDate: "",
-      endDate: "",
-      active: true,
-      applicableFoodIds: [],
+        const searchMatch = searchKeyword
+            ? promotion.name.toLowerCase().includes(searchKeyword.toLowerCase()) ||
+              (promotion.description && promotion.description.toLowerCase().includes(searchKeyword.toLowerCase()))
+            : true;
+        return typeMatch && searchMatch;
     });
-     setImagePreview(null); // Reset image preview for new item if applicable
-  };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewPromotionItem({ ...newPromotionItem, [name]: value });
-  };
+    const findFoodsByIds = (foodIds) => {
+        if (!foodIds || foodIds.length === 0) return [];
+        const foodIdStrings = foodIds.map(String);
+        return foods.filter((food) => foodIdStrings.includes(String(food.id)));
+    };
 
-   // This image upload might be for a promotion banner, not food image
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setImagePreview(reader.result); // Hiển thị ảnh xem trước
-        // Decide where to store this image URL - maybe in newPromotionItem?
-        // setNewPromotionItem({ ...newPromotionItem, image: reader.result }); // Example
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // This function needs to be adapted to save a NEW PROMOTION, possibly linked to selected foods
-  const handleSaveNewItem = async () => {
-    // Basic validation for promotion fields
-    if (!newPromotionItem.name || !newPromotionItem.value || newPromotionItem.applicableFoodIds.length === 0) {
-        alert("Vui lòng điền đầy đủ thông tin và chọn ít nhất một món ăn áp dụng!");
-        return;
-    }
-
-     const token = localStorage.getItem('jwtToken');
-    if (!token) {
-      alert("No authentication token found. Please log in.");
-      return;
-    }
-
-    try {
-        // Construct the promotion data object based on your backend's expected structure
-        const promotionData = {
-            name: newPromotionItem.name,
-            description: newPromotionItem.description,
-            type: newPromotionItem.type,
-            value: parseFloat(newPromotionItem.value), // Ensure correct type
-            startDate: newPromotionItem.startDate ? new Date(newPromotionItem.startDate).toISOString() : null,
-            endDate: newPromotionItem.endDate ? new Date(newPromotionItem.endDate).toISOString() : null,
-            active: newPromotionItem.active,
-            applicableFoodIds: newPromotionItem.applicableFoodIds.map(String),
-        };
-
-        console.log('Sending promotion data:', promotionData);
-
-        const response = await axios.post('http://localhost:8080/api/promotions', promotionData, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-        });
-
-        console.log('Promotion created:', response.data);
-        fetchData();
-        alert("Khuyến mãi đã được thêm thành công!");
-        setIsAddModalVisible(false);
+    const handleAddButtonClick = () => {
+        setIsAddModalVisible(true);
         setNewPromotionItem({
-            name: "", description: "", type: "PERCENTAGE", value: "", startDate: "", endDate: "", active: true, applicableFoodIds: [],
+            name: "",
+            description: "",
+            type: "PERCENTAGE",
+            value: "",
+            startDate: "",
+            endDate: "",
+            active: true,
+            applicableFoodIds: [],
         });
-        setImagePreview(null);
+    };
 
-    } catch (err) {
-        console.error('Error adding promotion:', err.response ? err.response.data : err.message);
-        alert("Failed to add promotion. Please try again.");
-    }
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setNewPromotionItem({ ...newPromotionItem, [name]: value });
+    };
 
-  };
+    const handleFoodSelection = (foodId, isSelected) => {
+        const updatedIds = isSelected
+            ? [...newPromotionItem.applicableFoodIds, foodId]
+            : newPromotionItem.applicableFoodIds.filter((id) => id !== foodId);
+        setNewPromotionItem({ ...newPromotionItem, applicableFoodIds: updatedIds });
+    };
 
-  const handleCancelAdd = () => {
-    setIsAddModalVisible(false);
-    setNewPromotionItem({ // Reset form
-      name: "", description: "", type: "PERCENTAGE", value: "", startDate: "", endDate: "", active: true, applicableFoodIds: [],
-    });
-    setImagePreview(null);
-  };
+    const handleEditFoodSelection = (foodId, isSelected) => {
+        const updatedIds = isSelected
+            ? [...editPromotionItem.applicableFoodIds, foodId]
+            : editPromotionItem.applicableFoodIds.filter((id) => id !== foodId);
+        setEditPromotionItem({ ...editPromotionItem, applicableFoodIds: updatedIds });
+    };
 
-  // This function needs to be adapted for editing an existing PROMOTION
-  const handleEditButtonClick = (promotion) => {
-     // Logic to open modal for editing an existing promotion
-     setEditPromotionItem(promotion); // Set the promotion to be edited
-     setIsEditModalVisible(true);
-      // Initialize form fields based on editPromotionItem
-      // Example: setNewPromotionItem({ ...promotion, discountPercentage: String(promotion.discountPercentage) });
-  };
+    const handleSaveNewItem = async () => {
+        if (!newPromotionItem.name || !newPromotionItem.value || newPromotionItem.applicableFoodIds.length === 0) {
+            alert("Vui lòng điền đầy đủ thông tin và chọn ít nhất một món ăn áp dụng!");
+            return;
+        }
 
-  const handleEditInputChange = (e) => {
-    const { name, value } = e.target;
-    setEditPromotionItem({ ...editPromotionItem, [name]: value });
-  };
+        const token = localStorage.getItem("jwtToken");
+        if (!token) {
+            alert("No authentication token found. Please log in.");
+            return;
+        }
 
-   // This image upload might be for a promotion banner
-  const handleEditImageUpload = (e) => {
-      const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        // Decide where to store this image URL - maybe in editPromotionItem?
-        // setEditPromotionItem({ ...editPromotionItem, image: reader.result }); // Example
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+        try {
+            const promotionData = {
+                name: newPromotionItem.name,
+                description: newPromotionItem.description,
+                type: newPromotionItem.type,
+                value: parseFloat(newPromotionItem.value),
+                startDate: newPromotionItem.startDate ? new Date(newPromotionItem.startDate).toISOString() : null,
+                endDate: newPromotionItem.endDate ? new Date(newPromotionItem.endDate).toISOString() : null,
+                active: newPromotionItem.active,
+                applicableFoodIds: newPromotionItem.applicableFoodIds.map(String),
+            };
 
-  // This function needs to be adapted to save changes to an existing PROMOTION
-  const handleSaveEditItem = async () => {
-      // Basic validation
-    if (!editPromotionItem.name || !editPromotionItem.value || editPromotionItem.applicableFoodIds.length === 0) {
-        alert("Vui lòng điền đầy đủ thông tin và chọn ít nhất một món ăn áp dụng!");
-        return;
-    }
+            await axios.post("http://localhost:8080/api/promotions", promotionData, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+            });
 
-     const token = localStorage.getItem('jwtToken');
-    if (!token) {
-      alert("No authentication token found. Please log in.");
-      return;
-    }
+            fetchData();
+            alert("Khuyến mãi đã được thêm thành công!");
+            setIsAddModalVisible(false);
+        } catch (err) {
+            alert("Failed to add promotion. Please try again.");
+        }
+    };
 
-    try {
-        // Construct the updated promotion data object
-        const updatedPromotionData = {
-            id: editPromotionItem.id,
-            name: editPromotionItem.name,
-            description: editPromotionItem.description,
-            type: editPromotionItem.type,
-            value: parseFloat(editPromotionItem.value),
-            startDate: editPromotionItem.startDate ? new Date(editPromotionItem.startDate).toISOString() : null,
-            endDate: editPromotionItem.endDate ? new Date(editPromotionItem.endDate).toISOString() : null,
-            active: editPromotionItem.active,
-            applicableFoodIds: editPromotionItem.applicableFoodIds.map(String),
-        };
+    const handleCancelAdd = () => {
+        setIsAddModalVisible(false);
+    };
 
-        console.log('Sending updated promotion data:', updatedPromotionData);
+    const handleEditButtonClick = (promotion) => {
+        setEditPromotionItem({ ...promotion });
+        setIsEditModalVisible(true);
+    };
 
-        const response = await axios.patch(`http://localhost:8080/api/promotions/${editPromotionItem.id}`, updatedPromotionData, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-        });
+    const handleEditInputChange = (e) => {
+        const { name, value } = e.target;
+        setEditPromotionItem({ ...editPromotionItem, [name]: value });
+    };
 
-        console.log('Promotion updated:', response.data);
-        fetchData();
-        alert("Khuyến mãi đã được cập nhật thành công!");
+    const handleSaveEditItem = async () => {
+        if (!editPromotionItem.name || !editPromotionItem.value) {
+            alert("Vui lòng điền đầy đủ thông tin!");
+            return;
+        }
+
+        const token = localStorage.getItem("jwtToken");
+        if (!token) {
+            alert("No authentication token found. Please log in.");
+            return;
+        }
+
+        try {
+            const promotionData = {
+                name: editPromotionItem.name,
+                description: editPromotionItem.description,
+                type: editPromotionItem.type,
+                value: parseFloat(editPromotionItem.value),
+                startDate: editPromotionItem.startDate ? new Date(editPromotionItem.startDate).toISOString() : null,
+                endDate: editPromotionItem.endDate ? new Date(editPromotionItem.endDate).toISOString() : null,
+                active: editPromotionItem.active,
+                applicableFoodIds: editPromotionItem.applicableFoodIds?.map(String) || [],
+            };
+
+            await axios.put(`http://localhost:8080/api/promotions/${editPromotionItem.id}`, promotionData, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+            });
+
+            fetchData();
+            alert("Khuyến mãi đã được cập nhật thành công!");
+            setIsEditModalVisible(false);
+        } catch (err) {
+            alert("Failed to update promotion. Please try again.");
+        }
+    };
+
+    const handleCancelEdit = () => {
         setIsEditModalVisible(false);
         setEditPromotionItem(null);
+    };
 
-    } catch (err) {
-        console.error('Error updating promotion:', err.response ? err.response.data : err.message);
-        alert("Failed to update promotion. Please try again.");
+    const handleDeleteButtonClick = (promotion) => {
+        setPromotionToDelete(promotion);
+        setIsDeleteModalVisible(true);
+    };
+
+    const handleCancelDelete = () => {
+        setIsDeleteModalVisible(false);
+        setPromotionToDelete(null);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!promotionToDelete) return;
+
+        const token = localStorage.getItem("jwtToken");
+        if (!token) {
+            alert("No authentication token found. Please log in.");
+            return;
+        }
+
+        try {
+            await axios.delete(`http://localhost:8080/api/promotions/${promotionToDelete.id}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            fetchData();
+            alert("Khuyến mãi đã được xóa thành công!");
+            setIsDeleteModalVisible(false);
+            setPromotionToDelete(null);
+        } catch (err) {
+            alert("Failed to delete promotion. Please try again.");
+        }
+    };
+
+    const formatPrice = (price) => {
+        return new Intl.NumberFormat("vi-VN", {
+            style: "currency",
+            currency: "VND",
+        }).format(price);
+    };
+
+    const calculateDiscountedPrice = (originalPrice, promotion) => {
+        if (promotion.type === "PERCENTAGE") {
+            return originalPrice * (1 - promotion.value / 100);
+        } else {
+            return Math.max(0, originalPrice - promotion.value);
+        }
+    };
+
+    const getStatusBadge = (promotion) => {
+        const now = new Date();
+        const start = promotion.startDate ? new Date(promotion.startDate) : null;
+        const end = promotion.endDate ? new Date(promotion.endDate) : null;
+
+        if (!promotion.active) {
+            return <span className="status-badge inactive">Đã tắt</span>;
+        } else if (start && now < start) {
+            return <span className="status-badge upcoming">Sắp diễn ra</span>;
+        } else if (end && now > end) {
+            return <span className="status-badge expired">Đã hết hạn</span>;
+        } else {
+            return <span className="status-badge active">Đang áp dụng</span>;
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="promotion-container">
+                <Topbar title="QUẢN LÝ KHUYẾN MÃI" />
+                <div className="main-content">
+                    <div className="loading-container">
+                        <div className="loading-spinner"></div>
+                        <p>Đang tải dữ liệu...</p>
+                    </div>
+                </div>
+                <FooterComponent />
+            </div>
+        );
     }
 
-  };
-
-  const handleCancelEdit = () => {
-    setIsEditModalVisible(false);
-    setEditPromotionItem(null);
-  };
-
-  // Display loading or error state
-  if (loading) {
-    return (
-      <div className="promotion-container">
-        <Topbar title="QUẢN LÝ KHUYẾN MÃI" />
-        <div className="main-content">
-          <p>Đang tải dữ liệu...</p> {/* Updated loading message */}
-        </div>
-        <FooterComponent />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="promotion-container">
-        <Topbar title="QUẢN LÝ KHUYẾN MÃI" />
-        <div className="main-content">
-          <p style={{ color: 'red' }}>Lỗi: {error}</p>
-        </div>
-        <FooterComponent />
-      </div>
-    );
-  }
-
-  return (
-    <div className="promotion-container">
-      <Topbar title="QUẢN LÝ KHUYẾN MÃI" />
-      <div className="main-content">
-        <div className="promotion-filter-bar">
-          <div className="filter-left">
-            <div className="filter-item">
-              <SearchOutlined />
-              <input
-                type="text"
-                placeholder="Tìm kiếm khuyến mãi..." // Updated placeholder
-                value={searchKeyword}
-                onChange={handleSearchChange}
-              />
-            </div>
-          </div>
-          <div className="filter-right">
-             <button className="add-button" onClick={handleAddButtonClick}>
-              + Thêm Khuyến Mãi
-            </button>
-          </div>
-        </div>
-
-        <div className="promotion-menu-container">
-           {/* Categories bar for filtering promotions */}
-          <div className="promotion-menu-categories">
-            {categories.map((category) => (
-              <button
-                key={category}
-                className={`category ${
-                  activeCategory === category ? "active" : ""
-                }`}
-                onClick={() => handleCategoryChange(category)}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
-          {/* Display fetched and filtered promotions and their associated foods */}
-          <div className="promotion-list">
-            {filteredPromotions.length === 0 && searchKeyword === "" ? (
-                <p>Chưa có khuyến mãi nào được tạo.</p>
-            ) : filteredPromotions.length === 0 && searchKeyword !== "" ? (
-                 <p>Không tìm thấy khuyến mãi nào phù hợp với từ khóa "{searchKeyword}".</p>
-            ) : (
-              filteredPromotions.map((promotion) => (
-                 <div key={promotion.id} className="promotion-item">
-                   <h3>{promotion.name}</h3>
-                   <p>{promotion.description}</p>
-                   {promotion.type === "PERCENTAGE" && (
-                     <p>Giảm giá: {promotion.value}%</p>
-                   )}
-                   {promotion.type === "FIXED_AMOUNT" && (
-                     <p>Giảm giá: {promotion.value.toLocaleString()} VND</p>
-                   )}
-                   {promotion.startDate && <p>Từ ngày: {new Date(promotion.startDate).toLocaleDateString()}</p>}
-                   {promotion.endDate && <p>Đến ngày: {new Date(promotion.endDate).toLocaleDateString()}</p>}
-                   <p>Trạng thái: {promotion.active ? "Đang áp dụng" : "Đã kết thúc"}</p>
-
-                   <h4>Các món áp dụng:</h4>
-                   <div className="applicable-foods-grid">
-                       {findFoodsByIds(promotion.applicableFoodIds).map(food => (
-                           <div key={food.id} className="food-item-small"> {/* This will be styled like .menu-item */}
-                                <img src={food.image} alt={food.name} className="applicable-food-image" /> {/* Add specific class */}
-                                <div className="item-info"> {/* Equivalent to .item-info in FoodManagementPage */}
-                                  <h3 className="item-name">{food.name}</h3> {/* Use h3 for consistency */}
-                                  <p className="original-price">{food.price.toLocaleString()} VND</p>
-                                  {promotion.type === "PERCENTAGE" && (
-                                    <p className="discount-price">
-                                      {(food.price * (1 - promotion.value / 100)).toLocaleString()} VND
-                                    </p>
-                                  )}
-                                  {promotion.type === "FIXED_AMOUNT" && (
-                                    <p className="discount-price">
-                                      {Math.max(0, food.price - promotion.value).toLocaleString()} VND
-                                    </p>
-                                  )}
-                                </div>
-                           </div>
-                       ))}
-                        {findFoodsByIds(promotion.applicableFoodIds).length === 0 && (
-                            <p>Chưa có món ăn nào được áp dụng khuyến mãi này.</p>
-                        )}
-                   </div>
-
-                    <div className="promotion-actions">
-                         <button className="edit-button" onClick={() => handleEditButtonClick(promotion)}>
-                             <EditOutlined /> Sửa Khuyến Mãi
-                         </button>
+    if (error) {
+        return (
+            <div className="promotion-container">
+                <Topbar title="QUẢN LÝ KHUYẾN MÃI" />
+                <div className="main-content">
+                    <div className="error-container">
+                        <p className="error-message">Lỗi: {error}</p>
+                        <button onClick={fetchData} className="retry-button">
+                            Thử lại
+                        </button>
                     </div>
-                 </div>
-              ))
-            )}
-          </div>
+                </div>
+                <FooterComponent />
+            </div>
+        );
+    }
+
+    return (
+        <div className="promotion-container">
+            <Topbar title="QUẢN LÝ KHUYẾN MÃI" />
+            <div className="main-content">
+                {/* Filter Bar */}
+                <div className="filter-bar">
+                    <div className="filter-left">
+                        <div className="filter-item">
+                            <SearchOutlined />
+                            <input
+                                type="text"
+                                placeholder="Tìm kiếm khuyến mãi..."
+                                value={searchKeyword}
+                                onChange={handleSearchChange}
+                            />
+                        </div>
+                    </div>
+                    <div className="filter-right">
+                        <button className="add-button" onClick={handleAddButtonClick}>
+                            <TagsOutlined /> Thêm Khuyến Mãi
+                        </button>
+                    </div>
+                </div>
+
+                {/* Promotion Container */}
+                <div className="promotion-management-container">
+                    {/* Type Categories */}
+                    <div className="promotion-categories">
+                        {promotionTypes.map((type) => (
+                            <button
+                                key={type}
+                                className={`category ${activeType === type ? "active" : ""}`}
+                                onClick={() => handleTypeChange(type)}
+                            >
+                                {type}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Promotions Grid */}
+                    <div className="promotions-grid">
+                        {filteredPromotions.length === 0 ? (
+                            <div className="empty-state">
+                                <TagsOutlined className="empty-icon" />
+                                <p>
+                                    {searchKeyword
+                                        ? `Không tìm thấy khuyến mãi nào phù hợp với từ khóa "${searchKeyword}"`
+                                        : "Chưa có khuyến mãi nào được tạo"}
+                                </p>
+                            </div>
+                        ) : (
+                            filteredPromotions.map((promotion) => (
+                                <div key={promotion.id} className="promotion-card">
+                                    <div className="promotion-header">
+                                        <div className="promotion-title">
+                                            <h3>{promotion.name}</h3>
+                                            {getStatusBadge(promotion)}
+                                        </div>
+                                        <div className="promotion-actions">
+                                            <button
+                                                className="action-btn edit-btn"
+                                                onClick={() => handleEditButtonClick(promotion)}
+                                                title="Sửa khuyến mãi"
+                                            >
+                                                <EditOutlined />
+                                            </button>
+                                            <button
+                                                className="action-btn delete-btn"
+                                                onClick={() => handleDeleteButtonClick(promotion)}
+                                                title="Xóa khuyến mãi"
+                                            >
+                                                <DeleteOutlined />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="promotion-info">
+                                        <p className="promotion-description">{promotion.description}</p>
+
+                                        <div className="promotion-details">
+                                            <div className="detail-item">
+                                                <TagsOutlined className="detail-icon" />
+                                                <span>
+                                                    {promotion.type === "PERCENTAGE"
+                                                        ? `Giảm ${promotion.value}%`
+                                                        : `Giảm ${formatPrice(promotion.value)}`}
+                                                </span>
+                                            </div>
+
+                                            {promotion.startDate && (
+                                                <div className="detail-item">
+                                                    <CalendarOutlined className="detail-icon" />
+                                                    <span>
+                                                        {new Date(promotion.startDate).toLocaleDateString("vi-VN")}
+                                                        {promotion.endDate &&
+                                                            ` - ${new Date(promotion.endDate).toLocaleDateString(
+                                                                "vi-VN"
+                                                            )}`}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="applicable-foods">
+                                        <h4>Món ăn áp dụng ({findFoodsByIds(promotion.applicableFoodIds).length})</h4>
+                                        <div className="foods-grid">
+                                            {findFoodsByIds(promotion.applicableFoodIds).map((food) => (
+                                                <div key={food.id} className="food-item">
+                                                    <img src={food.image} alt={food.name} className="food-image" />
+                                                    <div className="food-info">
+                                                        <p className="food-name">{food.name}</p>
+                                                        <div className="price-info">
+                                                            <span className="original-price">
+                                                                {formatPrice(food.price)}
+                                                            </span>
+                                                            <span className="discounted-price">
+                                                                {formatPrice(
+                                                                    calculateDiscountedPrice(food.price, promotion)
+                                                                )}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+
+                                            {findFoodsByIds(promotion.applicableFoodIds).length === 0 && (
+                                                <p className="no-foods">Chưa có món ăn nào được áp dụng</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+
+                {/* Add Modal */}
+                {isAddModalVisible && (
+                    <div className="modal-overlay">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h3>Thêm Khuyến Mãi Mới</h3>
+                                <button className="close-btn" onClick={handleCancelAdd}>
+                                    ×
+                                </button>
+                            </div>
+
+                            <div className="modal-body">
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Tên khuyến mãi *</label>
+                                        <input
+                                            type="text"
+                                            name="name"
+                                            value={newPromotionItem.name}
+                                            onChange={handleInputChange}
+                                            placeholder="VD: Flash Sale Cuối Tuần"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Mô tả</label>
+                                    <textarea
+                                        name="description"
+                                        value={newPromotionItem.description}
+                                        onChange={handleInputChange}
+                                        placeholder="Mô tả chi tiết về khuyến mãi..."
+                                        rows="3"
+                                    />
+                                </div>
+
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Loại khuyến mãi *</label>
+                                        <select name="type" value={newPromotionItem.type} onChange={handleInputChange}>
+                                            <option value="PERCENTAGE">Giảm theo phần trăm (%)</option>
+                                            <option value="FIXED_AMOUNT">Giảm số tiền cố định (VND)</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>
+                                            {newPromotionItem.type === "PERCENTAGE"
+                                                ? "Phần trăm giảm (%)"
+                                                : "Số tiền giảm (VND)"}
+                                        </label>
+                                        <input
+                                            type="number"
+                                            name="value"
+                                            value={newPromotionItem.value}
+                                            onChange={handleInputChange}
+                                            placeholder={
+                                                newPromotionItem.type === "PERCENTAGE" ? "VD: 20" : "VD: 50000"
+                                            }
+                                            min="0"
+                                            max={newPromotionItem.type === "PERCENTAGE" ? "100" : undefined}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Ngày bắt đầu</label>
+                                        <input
+                                            type="date"
+                                            name="startDate"
+                                            value={newPromotionItem.startDate}
+                                            onChange={handleInputChange}
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Ngày kết thúc</label>
+                                        <input
+                                            type="date"
+                                            name="endDate"
+                                            value={newPromotionItem.endDate}
+                                            onChange={handleInputChange}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Chọn món ăn áp dụng *</label>
+                                    <div className="foods-selection">
+                                        {foods.map((food) => (
+                                            <div key={food.id} className="food-checkbox">
+                                                <input
+                                                    type="checkbox"
+                                                    id={`food-${food.id}`}
+                                                    checked={newPromotionItem.applicableFoodIds.includes(food.id)}
+                                                    onChange={(e) => handleFoodSelection(food.id, e.target.checked)}
+                                                />
+                                                <label htmlFor={`food-${food.id}`} className="food-label">
+                                                    <img src={food.image} alt={food.name} className="food-thumbnail" />
+                                                    <div className="food-details">
+                                                        <span className="food-name">{food.name}</span>
+                                                        <span className="food-price">{formatPrice(food.price)}</span>
+                                                    </div>
+                                                </label>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="modal-footer">
+                                <button className="btn-secondary" onClick={handleCancelAdd}>
+                                    Hủy
+                                </button>
+                                <button className="btn-primary" onClick={handleSaveNewItem}>
+                                    Thêm Khuyến Mãi
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Edit Modal */}
+                {isEditModalVisible && editPromotionItem && (
+                    <div className="modal-overlay">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h3>Sửa Khuyến Mãi</h3>
+                                <button className="close-btn" onClick={handleCancelEdit}>
+                                    ×
+                                </button>
+                            </div>
+
+                            <div className="modal-body">
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Tên khuyến mãi *</label>
+                                        <input
+                                            type="text"
+                                            name="name"
+                                            value={editPromotionItem.name}
+                                            onChange={handleEditInputChange}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Mô tả</label>
+                                    <textarea
+                                        name="description"
+                                        value={editPromotionItem.description || ""}
+                                        onChange={handleEditInputChange}
+                                        rows="3"
+                                    />
+                                </div>
+
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Loại khuyến mãi *</label>
+                                        <select
+                                            name="type"
+                                            value={editPromotionItem.type}
+                                            onChange={handleEditInputChange}
+                                        >
+                                            <option value="PERCENTAGE">Giảm theo phần trăm (%)</option>
+                                            <option value="FIXED_AMOUNT">Giảm số tiền cố định (VND)</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>
+                                            {editPromotionItem.type === "PERCENTAGE"
+                                                ? "Phần trăm giảm (%)"
+                                                : "Số tiền giảm (VND)"}
+                                        </label>
+                                        <input
+                                            type="number"
+                                            name="value"
+                                            value={editPromotionItem.value}
+                                            onChange={handleEditInputChange}
+                                            min="0"
+                                            max={editPromotionItem.type === "PERCENTAGE" ? "100" : undefined}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Ngày bắt đầu</label>
+                                        <input
+                                            type="date"
+                                            name="startDate"
+                                            value={
+                                                editPromotionItem.startDate
+                                                    ? editPromotionItem.startDate.substring(0, 10)
+                                                    : ""
+                                            }
+                                            onChange={handleEditInputChange}
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>Ngày kết thúc</label>
+                                        <input
+                                            type="date"
+                                            name="endDate"
+                                            value={
+                                                editPromotionItem.endDate
+                                                    ? editPromotionItem.endDate.substring(0, 10)
+                                                    : ""
+                                            }
+                                            onChange={handleEditInputChange}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="form-group">
+                                    <div className="form-checkbox">
+                                        <input
+                                            type="checkbox"
+                                            id="active"
+                                            name="active"
+                                            checked={editPromotionItem.active}
+                                            onChange={(e) =>
+                                                setEditPromotionItem({ ...editPromotionItem, active: e.target.checked })
+                                            }
+                                        />
+                                        <label htmlFor="active">Kích hoạt khuyến mãi</label>
+                                    </div>
+                                </div>
+
+                                <div className="form-group">
+                                    <label>Chọn món ăn áp dụng</label>
+                                    <div className="foods-selection">
+                                        {foods.map((food) => (
+                                            <div key={food.id} className="food-checkbox">
+                                                <input
+                                                    type="checkbox"
+                                                    id={`edit-food-${food.id}`}
+                                                    checked={
+                                                        editPromotionItem.applicableFoodIds?.includes(food.id) || false
+                                                    }
+                                                    onChange={(e) => handleEditFoodSelection(food.id, e.target.checked)}
+                                                />
+                                                <label htmlFor={`edit-food-${food.id}`} className="food-label">
+                                                    <img src={food.image} alt={food.name} className="food-thumbnail" />
+                                                    <div className="food-details">
+                                                        <span className="food-name">{food.name}</span>
+                                                        <span className="food-price">{formatPrice(food.price)}</span>
+                                                    </div>
+                                                </label>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="modal-footer">
+                                <button className="btn-secondary" onClick={handleCancelEdit}>
+                                    Hủy
+                                </button>
+                                <button className="btn-primary" onClick={handleSaveEditItem}>
+                                    Cập Nhật
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Delete Confirmation Modal */}
+                {isDeleteModalVisible && promotionToDelete && (
+                    <div className="modal-overlay">
+                        <div className="modal-content delete-modal">
+                            <div className="modal-header">
+                                <h3>Xác nhận xóa</h3>
+                            </div>
+
+                            <div className="modal-body">
+                                <p>
+                                    Bạn có chắc chắn muốn xóa khuyến mãi <strong>"{promotionToDelete.name}"</strong>?
+                                </p>
+                                <p className="warning-text">Hành động này không thể hoàn tác!</p>
+                            </div>
+
+                            <div className="modal-footer">
+                                <button className="btn-secondary" onClick={handleCancelDelete}>
+                                    Hủy
+                                </button>
+                                <button className="btn-danger" onClick={handleConfirmDelete}>
+                                    Xóa
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+            <FooterComponent />
         </div>
-
-        {/* Modal sửa khuyến mãi */}
-        {isEditModalVisible && (
-          <div className="edit-modal">
-            <div className="modal-content">
-              <h3 style={{ color: "#b71c1c", fontSize: "24px" }}>Sửa Khuyến Mãi</h3>
-               <div className="form-group"><label>Tên Khuyến Mãi</label><input type="text" name="name" value={editPromotionItem?.name || ''} onChange={handleEditInputChange} /></div>
-               <div className="form-group"><label>Mô tả</label><textarea name="description" value={editPromotionItem?.description || ''} onChange={handleEditInputChange}></textarea></div>
-               <div className="form-group">
-                 <label>Loại khuyến mãi</label>
-                 <select name="type" value={editPromotionItem?.type || 'PERCENTAGE'} onChange={handleEditInputChange}>
-                   <option value="PERCENTAGE">Giảm giá theo phần trăm</option>
-                   <option value="FIXED_AMOUNT">Giảm giá cố định</option>
-                 </select>
-               </div>
-               <div className="form-group">
-                 <label>{editPromotionItem?.type === 'FIXED_AMOUNT' ? 'Số tiền giảm (VND)' : 'Phần trăm giảm giá (%)'}</label>
-                 <input type="number" name="value" value={editPromotionItem?.value || ''} onChange={handleEditInputChange} />
-               </div>
-               <div className="form-group"><label>Ngày bắt đầu</label><input type="date" name="startDate" value={editPromotionItem?.startDate ? editPromotionItem.startDate.substring(0, 10) : ''} onChange={handleEditInputChange} /></div>
-               <div className="form-group"><label>Ngày kết thúc</label><input type="date" name="endDate" value={editPromotionItem?.endDate ? editPromotionItem.endDate.substring(0, 10) : ''} onChange={handleEditInputChange} /></div>
-               <div className="form-group">
-                 <label>Trạng thái</label>
-                 <select name="active" value={editPromotionItem?.active ? 'true' : 'false'} onChange={handleEditInputChange}>
-                   <option value="true">Đang áp dụng</option>
-                   <option value="false">Đã kết thúc</option>
-                 </select>
-               </div>
-               {/* Applicable Foods selection needed here */}
-               <div className="form-group">
-                  <label>Chọn món ăn áp dụng khuyến mãi</label>
-                  <div className="food-selection-grid"> {/* Add a grid for food selection */}
-                    {foods.map(food => (
-                      <div key={food.id} className="food-selection-item">
-                        <input
-                          type="checkbox"
-                          id={`food-${food.id}-edit`}
-                          value={food.id}
-                          checked={editPromotionItem?.applicableFoodIds?.includes(String(food.id)) || false} // Check if ID is in the array
-                          onChange={(e) => {
-                            const foodId = String(e.target.value);
-                            setEditPromotionItem(prevState => ({
-                              ...prevState,
-                              applicableFoodIds: e.target.checked
-                                ? [...(prevState?.applicableFoodIds || []), foodId]
-                                : (prevState?.applicableFoodIds || []).filter(id => id !== foodId)
-                            }));
-                          }}
-                        />
-                        <label htmlFor={`food-${food.id}-edit`}>
-                           <img src={food.image} alt={food.name} className="food-selection-image" /> {/* Optional: show image */}
-                          {food.name}
-                        </label>
-                      </div>
-                    ))}
-                     {foods.length === 0 && <p>Không tìm thấy món ăn nào để áp dụng khuyến mãi.</p>}
-                  </div>
-               </div>
-              <div className="modal-actions">
-                <button onClick={handleCancelEdit}>Hủy</button>
-                <button onClick={handleSaveEditItem}>Lưu</button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Modal thêm khuyến mãi */}
-        {isAddModalVisible && (
-          <div className="add-modal">
-            <div className="modal-content">
-              <h3 style={{ color: "#b71c1c", fontSize: "24px" }}>Thêm Khuyến Mãi Mới</h3>
-               <div className="form-group"><label>Tên Khuyến Mãi</label><input type="text" name="name" value={newPromotionItem.name} onChange={handleInputChange} /></div>
-               <div className="form-group"><label>Mô tả</label><textarea name="description" value={newPromotionItem.description} onChange={handleInputChange}></textarea></div>
-               <div className="form-group">
-                 <label>Loại khuyến mãi</label>
-                 <select name="type" value={newPromotionItem.type} onChange={handleInputChange}>
-                   <option value="PERCENTAGE">Giảm giá theo phần trăm</option>
-                   <option value="FIXED_AMOUNT">Giảm giá cố định</option>
-                 </select>
-               </div>
-               <div className="form-group">
-                 <label>{newPromotionItem.type === 'FIXED_AMOUNT' ? 'Số tiền giảm (VND)' : 'Phần trăm giảm giá (%)'}</label>
-                 <input type="number" name="value" value={newPromotionItem.value} onChange={handleInputChange} />
-               </div>
-               <div className="form-group"><label>Ngày bắt đầu</label><input type="date" name="startDate" value={newPromotionItem.startDate} onChange={handleInputChange} /></div>
-               <div className="form-group"><label>Ngày kết thúc</label><input type="date" name="endDate" value={newPromotionItem.endDate} onChange={handleInputChange} /></div>
-               {/* Applicable Foods selection needed here */}
-               <div className="form-group">
-                 <label>Chọn món ăn áp dụng khuyến mãi</label>
-                 <div className="food-selection-grid"> {/* Add a grid for food selection */}
-                   {foods.map(food => (
-                     <div key={food.id} className="food-selection-item">
-                       <input
-                         type="checkbox"
-                         id={`food-${food.id}-add`}
-                         value={food.id}
-                         checked={newPromotionItem.applicableFoodIds.includes(String(food.id))} // Check if ID is in the array
-                         onChange={(e) => {
-                           const foodId = String(e.target.value); // Ensure ID is string for consistency
-                           setNewPromotionItem(prevState => ({
-                             ...prevState,
-                             applicableFoodIds: e.target.checked
-                               ? [...prevState.applicableFoodIds, foodId]
-                               : prevState.applicableFoodIds.filter(id => id !== foodId)
-                           }));
-                         }}
-                       />
-                       <label htmlFor={`food-${food.id}-add`}>
-                          <img src={food.image} alt={food.name} className="food-selection-image" /> {/* Optional: show image */}
-                         {food.name}
-                       </label>
-                     </div>
-                   ))}
-                   {foods.length === 0 && <p>Không tìm thấy món ăn nào để áp dụng khuyến mãi.</p>}
-                 </div>
-               </div>
-               <div className="modal-actions">
-                 <button onClick={handleCancelAdd}>Hủy</button>
-                 <button onClick={handleSaveNewItem}>Lưu</button>
-               </div>
-            </div>
-          </div>
-        )}
-      </div>
-      <FooterComponent />
-    </div>
-  );
+    );
 };
 
 export default PromotionManagement;
