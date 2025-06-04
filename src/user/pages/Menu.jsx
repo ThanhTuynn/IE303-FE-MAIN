@@ -46,7 +46,7 @@ const Menu = () => {
         } else {
             try {
                 const user = JSON.parse(userData);
-                setUserId(user.id);
+                setUserId(user._id);
             } catch (e) {
                 console.error("Failed to parse user data from localStorage:", e);
                 // Handle error, maybe clear local storage and ask to login again

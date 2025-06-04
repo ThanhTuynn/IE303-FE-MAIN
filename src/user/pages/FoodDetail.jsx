@@ -51,12 +51,19 @@ const FoodDetail = () => {
             try {
                 setLoading(true);
 
-                // Try with _id first (MongoDB ObjectId), then fallback to numeric id
+                console.log("🍔 Fetching food detail for ID:", foodId);
+                console.log("🍔 ID type:", foodId.length > 10 ? "Likely ObjectId" : "Likely numeric ID");
+
+                // Try with the provided ID first (should work for both ObjectId and numeric)
                 let response;
                 try {
                     response = await axios.get(`http://localhost:8080/api/foods/${foodId}`);
+                    console.log("✅ Successfully fetched food:", response.data);
+                    console.log("✅ Food has ObjectId (_id):", response.data._id);
+                    console.log("✅ Food has numeric id:", response.data.id);
                 } catch (error) {
                     if (error.response?.status === 404) {
+                        console.log("⚠️ Food not found with direct ID, trying to find in foods list...");
                         // Try to find food by numeric id from the foods list
                         const allFoodsResponse = await axios.get("http://localhost:8080/api/foods");
                         const foundFood = allFoodsResponse.data.find(
@@ -65,6 +72,7 @@ const FoodDetail = () => {
 
                         if (foundFood) {
                             response = { data: foundFood };
+                            console.log("✅ Found food in list:", foundFood);
                         } else {
                             throw new Error("Food not found");
                         }
@@ -228,26 +236,40 @@ const FoodDetail = () => {
         const token = localStorage.getItem("jwtToken");
         const foodIdToUse = food._id || food.id;
 
-        try {
-            await axios.post(
-                `http://localhost:8080/api/carts/${userId}/items`,
-                {
-                    foodId: foodIdToUse,
-                    quantity: quantity,
-                    specialInstructions: specialInstructions || "",
-                },
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                }
-            );
+        console.log("🛒 Adding to cart:", {
+            userId: userId,
+            foodId: foodIdToUse,
+            foodName: food.name,
+            quantity: quantity,
+            price: food.price,
+            specialInstructions: specialInstructions,
+            preferredIdType: food._id ? "ObjectId (_id)" : "Numeric (id)",
+        });
 
+        try {
+            const requestData = {
+                foodId: foodIdToUse,
+                quantity: quantity,
+                specialInstructions: specialInstructions || "",
+            };
+
+            console.log("🛒 Request data:", requestData);
+            console.log("🛒 API URL:", `http://localhost:8080/api/carts/${userId}/items`);
+
+            const response = await axios.post(`http://localhost:8080/api/carts/${userId}/items`, requestData, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            console.log("✅ Cart add response:", response.data);
             toast.success(`Đã thêm ${quantity} ${food.name} vào giỏ hàng!`);
 
             // Reset form
             setQuantity(1);
             setSpecialInstructions("");
         } catch (error) {
-            console.error("Error adding to cart:", error);
+            console.error("❌ Error adding to cart:", error);
+            console.error("❌ Error response:", error.response?.data);
+            console.error("❌ Error status:", error.response?.status);
             toast.error("Có lỗi xảy ra khi thêm vào giỏ hàng!");
         }
     };
@@ -380,23 +402,179 @@ const FoodDetail = () => {
 
                 {/* Food Description */}
                 <div className="bg-white rounded-xl shadow-lg mt-8 p-8">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-4">Mô tả sản phẩm</h2>
-                    <p className="text-gray-600 leading-relaxed">
-                        {food.description || "Món ăn ngon với hương vị tuyệt vời từ UniFoodie."}
-                    </p>
+                    <h2 className="text-2xl font-bold text-gray-800 mb-6">Mô tả sản phẩm</h2>
 
-                    {/* Food Details */}
-                    <div className="mt-6">
-                        <h3 className="text-xl font-semibold text-gray-800 mb-3">Chi tiết sản phẩm</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="flex justify-between py-2 border-b border-gray-200">
-                                <span className="font-medium text-gray-700">Danh mục</span>
-                                <span className="text-gray-600">{food.category || "Đặc sản"}</span>
+                    {/* Main Description */}
+                    <div className="mb-8">
+                        <p className="text-gray-700 leading-relaxed text-lg">
+                            {food.description ||
+                                "Món ăn ngon với hương vị tuyệt vời từ UniFoodie, được chế biến từ nguyên liệu tươi ngon và công thức truyền thống."}
+                        </p>
+                    </div>
+
+                    {/* Food Details Grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* Left Column - Product Details */}
+                        <div>
+                            <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                                <span className="mr-2">📋</span>
+                                Chi tiết sản phẩm
+                            </h3>
+                            <div className="space-y-3">
+                                <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                                    <span className="font-medium text-gray-700 flex items-center">
+                                        <span className="mr-2">🏷️</span>
+                                        Danh mục
+                                    </span>
+                                    <span className="text-gray-800 font-semibold bg-blue-100 px-3 py-1 rounded-full text-sm">
+                                        {food.category || "Đặc sản"}
+                                    </span>
+                                </div>
+
+                                {food.rating && (
+                                    <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                                        <span className="font-medium text-gray-700 flex items-center">
+                                            <span className="mr-2">⭐</span>
+                                            Đánh giá
+                                        </span>
+                                        <span className="text-gray-800 font-semibold">{food.rating} / 5 sao</span>
+                                    </div>
+                                )}
+
+                                {food.calories && (
+                                    <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                                        <span className="font-medium text-gray-700 flex items-center">
+                                            <span className="mr-2">🔥</span>
+                                            Calories
+                                        </span>
+                                        <span className="text-gray-800 font-semibold">{food.calories} kcal</span>
+                                    </div>
+                                )}
+
+                                {food.prepTime && (
+                                    <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                                        <span className="font-medium text-gray-700 flex items-center">
+                                            <span className="mr-2">🕒</span>
+                                            Thời gian chuẩn bị
+                                        </span>
+                                        <span className="text-gray-800 font-semibold">{food.prepTime}</span>
+                                    </div>
+                                )}
+
+                                {food.spiceLevel && (
+                                    <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                                        <span className="font-medium text-gray-700 flex items-center">
+                                            <span className="mr-2">🌶️</span>
+                                            Độ cay
+                                        </span>
+                                        <span className="text-gray-800 font-semibold">{food.spiceLevel}</span>
+                                    </div>
+                                )}
+
+                                <div className="flex justify-between items-center py-3 border-b border-gray-200">
+                                    <span className="font-medium text-gray-700 flex items-center">
+                                        <span className="mr-2">🛡️</span>
+                                        Tình trạng
+                                    </span>
+                                    <span className="text-green-600 font-semibold bg-green-100 px-3 py-1 rounded-full text-sm">
+                                        Còn hàng
+                                    </span>
+                                </div>
+
+                                <div className="flex justify-between items-center py-3">
+                                    <span className="font-medium text-gray-700 flex items-center">
+                                        <span className="mr-2">✅</span>
+                                        Chất lượng
+                                    </span>
+                                    <span className="text-blue-600 font-semibold">Tươi ngon, an toàn</span>
+                                </div>
                             </div>
-                            <div className="flex justify-between py-2 border-b border-gray-200">
-                                <span className="font-medium text-gray-700">Nguyên liệu</span>
-                                <span className="text-gray-600">Tươi ngon, an toàn</span>
+
+                            {/* Nutritional Benefits */}
+                            <div className="mt-8">
+                                <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                                    <span className="mr-2">💪</span>
+                                    Lợi ích dinh dưỡng
+                                </h4>
+                                <div className="space-y-2">
+                                    <div className="flex items-center text-sm text-gray-600">
+                                        <span className="mr-2">✨</span>
+                                        <span>Cung cấp năng lượng cho cơ thể</span>
+                                    </div>
+                                    <div className="flex items-center text-sm text-gray-600">
+                                        <span className="mr-2">✨</span>
+                                        <span>Giàu vitamin và khoáng chất</span>
+                                    </div>
+                                    <div className="flex items-center text-sm text-gray-600">
+                                        <span className="mr-2">✨</span>
+                                        <span>Phù hợp cho mọi lứa tuổi</span>
+                                    </div>
+                                </div>
                             </div>
+
+                            {/* Quality Assurance */}
+                            <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                <h4 className="text-lg font-semibold text-blue-800 mb-2 flex items-center">
+                                    <span className="mr-2">🏆</span>
+                                    Cam kết chất lượng
+                                </h4>
+                                <div className="space-y-1 text-sm text-blue-700">
+                                    <div className="flex items-center">
+                                        <span className="mr-2">🔸</span>
+                                        <span>Nguyên liệu được chọn lọc kỹ càng</span>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <span className="mr-2">🔸</span>
+                                        <span>Chế biến theo tiêu chuẩn vệ sinh thực phẩm</span>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <span className="mr-2">🔸</span>
+                                        <span>Đảm bảo hương vị ngon nhất khi giao hàng</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Right Column - Ingredients */}
+                        <div>
+                            <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                                <span className="mr-2">🥘</span>
+                                Nguyên liệu chính
+                            </h3>
+
+                            {food.ingredients && food.ingredients.length > 0 ? (
+                                <div className="grid grid-cols-1 gap-2">
+                                    {(Array.isArray(food.ingredients)
+                                        ? food.ingredients
+                                        : food.ingredients.split(", ")
+                                    ).map((ingredient, index) => (
+                                        <div
+                                            key={index}
+                                            className="flex items-center py-2 px-3 bg-green-50 rounded-lg border border-green-200"
+                                        >
+                                            <span className="mr-2 text-green-600">🌿</span>
+                                            <span className="text-gray-700 font-medium">{ingredient.trim()}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    <div className="flex items-center py-2 px-3 bg-green-50 rounded-lg border border-green-200">
+                                        <span className="mr-2 text-green-600">🌿</span>
+                                        <span className="text-gray-700 font-medium">Nguyên liệu tươi ngon</span>
+                                    </div>
+                                    <div className="flex items-center py-2 px-3 bg-green-50 rounded-lg border border-green-200">
+                                        <span className="mr-2 text-green-600">🌿</span>
+                                        <span className="text-gray-700 font-medium">Gia vị đậm đà</span>
+                                    </div>
+                                    <div className="flex items-center py-2 px-3 bg-green-50 rounded-lg border border-green-200">
+                                        <span className="mr-2 text-green-600">🌿</span>
+                                        <span className="text-gray-700 font-medium">
+                                            Chế biến theo công thức truyền thống
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
