@@ -282,7 +282,8 @@ const Promotions = () => {
                 const itemToAdd = {
                     foodId: foodIdentifier, // Use id or _id
                     name: food.name,
-                    price: food.price, // Use original price, promotion discount applied in cart/order
+                    price: food.promotionDetails ? food.price * (1 - food.promotionDetails.value / 100) : food.price, // Use discounted price if promotion exists, otherwise original price
+                    originalPrice: food.price, // Add original price
                     quantity: quantity,
                     imageUrl: food.image,
                 };

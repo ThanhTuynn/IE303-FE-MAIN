@@ -133,7 +133,15 @@ const Cart = ({ userId }) => {
                             <img src={item.imageUrl} alt={item.name} className="w-20 h-20 object-cover rounded-lg" />
                             <div>
                                 <h3 className="font-semibold text-lg">{item.name}</h3>
-                                <p className="text-gray-600">{item.price.toLocaleString("vi-VN")}đ</p>
+                                {/* Display original price if different from current price */}
+                                {item.originalPrice && item.originalPrice !== item.price ? (
+                                    <div className="flex items-center">
+                                        <p className="text-gray-600 line-through mr-2">{item.originalPrice.toLocaleString("vi-VN")}đ</p>
+                                        <p className="text-red-600 font-semibold">{item.price.toLocaleString("vi-VN")}đ</p>
+                                    </div>
+                                ) : (
+                                    <p className="text-gray-600">{item.price.toLocaleString("vi-VN")}đ</p>
+                                )}
                             </div>
                         </div>
                         <div className="flex items-center space-x-4">

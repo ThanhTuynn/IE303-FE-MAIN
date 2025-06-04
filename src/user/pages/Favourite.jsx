@@ -50,6 +50,16 @@ const Favourite = () => {
         const fetchFoodsAndFavourites = async (id, authToken) => {
             try {
                 setLoading(true);
+                // Fetch promotions data
+                console.log("Fetching promotions for favourites page...");
+                const promotionsResponse = await axios.get("http://localhost:8080/api/promotions", {
+                    headers: {
+                        Authorization: `Bearer ${authToken}`,
+                    },
+                });
+                const promotions = promotionsResponse.data;
+                console.log("Fetched promotions:", promotions);
+
                 const foodsResponse = await axios.get("http://localhost:8080/api/foods");
                 const allFoodItems = foodsResponse.data;
                 console.log("Fetched all foods:", allFoodItems);
@@ -73,7 +83,28 @@ const Favourite = () => {
                     return favouriteFoodIds.includes(foodIdString);
                 });
                 console.log("Filtered favourite food objects:", favoriteFoodObjects);
-                setFavourites(favoriteFoodObjects);
+
+                // Apply promotions to favorite food objects
+                const favoritedFoodsWithPromotions = favoriteFoodObjects.map(food => {
+                    const applicablePromotion = promotions.find(promo => 
+                        Array.isArray(promo.applicableFoodIds) && 
+                        promo.applicableFoodIds.includes(String(food.id || food._id))
+                    );
+
+                    if (applicablePromotion) {
+                        const discountedPrice = food.price * (1 - applicablePromotion.value / 100);
+                        return { 
+                            ...food, 
+                            originalPrice: food.price, 
+                            price: discountedPrice, // Update price to discounted price
+                            promotionDetails: applicablePromotion 
+                        };
+                    } else {
+                        return { ...food, originalPrice: food.price }; // Still add original price for consistency
+                    }
+                });
+                console.log("Favorited foods with promotions applied:", favoritedFoodsWithPromotions);
+                setFavourites(favoritedFoodsWithPromotions);
 
                 const initialQuantities = {};
                 favoriteFoodObjects.forEach((food) => {
@@ -237,9 +268,28 @@ const Favourite = () => {
 
                             <div className="p-4">
                                 <h3 className="font-bold text-lg text-gray-800 mb-2 line-clamp-1">{item.name}</h3>
-                                <p className="text-red-600 font-bold text-xl mb-3">
-                                    {item.price?.toLocaleString("vi-VN")}đ
-                                </p>
+                                {/* Display original price if different from current price (for promotions) */}
+                                {item.originalPrice && item.originalPrice !== item.price ? (
+                                    <div className="mb-3">
+                                        <div className="flex items-center">
+                                            <span className="text-gray-500 text-sm line-through mr-2">
+                                                {item.originalPrice.toLocaleString("vi-VN")}đ
+                                            </span>
+                                            <span className="text-red-600 font-bold text-xl">
+                                                {item.price?.toLocaleString("vi-VN")}đ
+                                            </span>
+                                        </div>
+                                        {item.promotionDetails && (
+                                            <p className="text-green-600 font-bold text-sm mt-1">
+                                                Giảm {item.promotionDetails.value}%
+                                            </p>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <p className="text-red-600 font-bold text-xl mb-3">
+                                        {item.price?.toLocaleString("vi-VN")}đ
+                                    </p>
+                                )}
                                 <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">
                                     {item.description}
                                 </p>
