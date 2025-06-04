@@ -68,7 +68,7 @@ const ChatBotWidget = () => {
             const welcomeMessage =
                 type === "admin"
                     ? "Xin chào! Bạn đã kết nối với bộ phận hỗ trợ UniFoodie. Chúng tôi sẽ hỗ trợ bạn trong thời gian sớm nhất."
-                    : "Xin chào! Tôi là chatbot của UniFoodie. Tôi có thể giúp bạn:\n• Tìm kiếm món ăn\n• Đặt hàng\n• Hỏi về khuyến mãi\n• Hỗ trợ đơn hàng\n\nBạn cần hỗ trợ gì?";
+                    : "Xin chào! Tôi là chatbot của UniFoodie. Tôi có thể giúp bạn:\n• Tìm kiếm món ăn\n• Các thông tin về UniFoodie\nBạn cần hỗ trợ gì?";
 
             setMessages([
                 {
@@ -415,24 +415,24 @@ const ChatBotWidget = () => {
                                             {message.food_suggestions ? (
                                                 <div className="grid grid-cols-1 gap-3">
                                                     {message.food_suggestions.map((item, idx) => {
-                                                        // Prioritize MongoDB ObjectId (_id) over numeric id
-                                                        const foodId = item._id || item.food_id || item.id;
+                                                        // Use regular id for food cart
+                                                        const foodId = item.id;
                                                         console.log("🍔 Food suggestion item:", item);
-                                                        console.log("🆔 Extracted food ID (prioritizing _id):", foodId);
+                                                        console.log("🆔 Extracted food ID:", foodId);
 
                                                         const handleFoodClick = async () => {
                                                             if (foodId && foodId !== "undefined" && foodId !== "null") {
-                                                                // We have a valid ID, navigate directly
+                                                                // We have a valid id, navigate directly
                                                                 const navigateUrl = `/food/${foodId}`;
                                                                 console.log(
-                                                                    "🚀 Navigating with ObjectId to:",
+                                                                    "🚀 Navigating with food ID to:",
                                                                     navigateUrl
                                                                 );
                                                                 navigate(navigateUrl);
                                                             } else {
-                                                                // No valid ID, try to find food by name
+                                                                // No valid id, try to find food by name
                                                                 console.log(
-                                                                    "⚠️ No valid ObjectId found, trying to find food by name:",
+                                                                    "⚠️ No valid ID found, trying to find food by name:",
                                                                     item["Tên món"] || item.name
                                                                 );
                                                                 try {
@@ -452,14 +452,24 @@ const ChatBotWidget = () => {
                                                                             "✅ Found food by name:",
                                                                             foundFood
                                                                         );
-                                                                        // Use _id (ObjectId) for navigation
-                                                                        const objectId = foundFood._id || foundFood.id;
-                                                                        const navigateUrl = `/food/${objectId}`;
-                                                                        console.log(
-                                                                            "🚀 Navigating with found ObjectId to:",
-                                                                            navigateUrl
-                                                                        );
-                                                                        navigate(navigateUrl);
+                                                                        // Use id for navigation
+                                                                        const objectId = foundFood.id;
+                                                                        if (objectId) {
+                                                                            const navigateUrl = `/food/${objectId}`;
+                                                                            console.log(
+                                                                                "🚀 Navigating with found ID to:",
+                                                                                navigateUrl
+                                                                            );
+                                                                            navigate(navigateUrl);
+                                                                        } else {
+                                                                            console.log(
+                                                                                "❌ Found food but no id:",
+                                                                                foundFood
+                                                                            );
+                                                                            alert(
+                                                                                `Không tìm thấy ID cho món "${foodName}"`
+                                                                            );
+                                                                        }
                                                                     } else {
                                                                         console.log(
                                                                             "❌ Food not found by name:",
@@ -488,30 +498,89 @@ const ChatBotWidget = () => {
                                                                 onClick={handleFoodClick}
                                                             >
                                                                 <img
-                                                                    src={item.image}
+                                                                    src={
+                                                                        item.image ||
+                                                                        item["Hình ảnh"] ||
+                                                                        "https://via.placeholder.com/64x64?text=No+Image"
+                                                                    }
                                                                     alt={item["Tên món"] || item.name}
                                                                     className="w-16 h-16 object-cover rounded-md border"
+                                                                    onError={(e) => {
+                                                                        e.target.src =
+                                                                            "https://via.placeholder.com/64x64?text=No+Image";
+                                                                    }}
                                                                 />
                                                                 <div className="flex-1">
                                                                     <div className="font-bold text-base text-red-600">
                                                                         {item["Tên món"] || item.name}
                                                                     </div>
-                                                                    <div className="text-xs text-gray-500 mb-1">
-                                                                        Giá:{" "}
-                                                                        <span className="font-semibold">
+
+                                                                    {/* Mô tả sản phẩm */}
+                                                                    {(item["Mô tả"] || item.description) && (
+                                                                        <div className="text-xs text-gray-600 mb-2 line-clamp-2">
+                                                                            {item["Mô tả"] || item.description}
+                                                                        </div>
+                                                                    )}
+
+                                                                    {/* Giá và category */}
+                                                                    <div className="flex items-center justify-between mb-2">
+                                                                        <div className="text-sm font-bold text-orange-600">
                                                                             {item["Giá"] || item.price} VNĐ
-                                                                        </span>
+                                                                        </div>
+                                                                        {(item["Danh mục"] || item.category) && (
+                                                                            <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                                                                                {item["Danh mục"] || item.category}
+                                                                            </div>
+                                                                        )}
                                                                     </div>
+
+                                                                    {/* Nguyên liệu */}
+                                                                    {(item["Nguyên liệu"] || item.ingredients) && (
+                                                                        <div className="text-xs text-gray-500 mb-2">
+                                                                            <span className="font-medium">
+                                                                                Nguyên liệu:{" "}
+                                                                            </span>
+                                                                            {Array.isArray(
+                                                                                item["Nguyên liệu"] || item.ingredients
+                                                                            )
+                                                                                ? (
+                                                                                      item["Nguyên liệu"] ||
+                                                                                      item.ingredients
+                                                                                  ).join(", ")
+                                                                                : item["Nguyên liệu"] ||
+                                                                                  item.ingredients}
+                                                                        </div>
+                                                                    )}
+
+                                                                    {/* Rating nếu có */}
+                                                                    {(item.rating || item["Đánh giá"]) && (
+                                                                        <div className="flex items-center gap-1 mb-2">
+                                                                            <span className="text-yellow-500">⭐</span>
+                                                                            <span className="text-xs text-gray-600">
+                                                                                {item.rating || item["Đánh giá"]} / 5
+                                                                            </span>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {/* Thời gian chuẩn bị nếu có */}
+                                                                    {(item["Thời gian chuẩn bị"] || item.prepTime) && (
+                                                                        <div className="text-xs text-gray-500 mb-2">
+                                                                            <span className="font-medium">
+                                                                                🕒 Thời gian:{" "}
+                                                                            </span>
+                                                                            {item["Thời gian chuẩn bị"] ||
+                                                                                item.prepTime}
+                                                                        </div>
+                                                                    )}
+
                                                                     {foodId &&
                                                                     foodId !== "undefined" &&
                                                                     foodId !== "null" ? (
                                                                         <div className="text-xs text-green-600">
-                                                                            ✅ ObjectId: {foodId}
+                                                                            ✅ ID: {foodId}
                                                                         </div>
                                                                     ) : (
-                                                                        <div className="text-xs text-orange-500">
-                                                                            ⚠️ Sẽ tìm theo tên món
-                                                                        </div>
+                                                                        <div className="text-xs text-orange-500"></div>
                                                                     )}
                                                                 </div>
                                                             </div>
@@ -521,24 +590,24 @@ const ChatBotWidget = () => {
                                             ) : message.suggested_items ? (
                                                 <div className="grid grid-cols-1 gap-3">
                                                     {message.suggested_items.map((item, idx) => {
-                                                        // Prioritize MongoDB ObjectId (_id) over numeric id
-                                                        const foodId = item._id || item.food_id || item.id;
+                                                        // Use regular id for food cart
+                                                        const foodId = item.id;
                                                         console.log("🍽️ Suggested item:", item);
-                                                        console.log("🆔 Extracted food ID (prioritizing _id):", foodId);
+                                                        console.log("🆔 Extracted food ID:", foodId);
 
                                                         const handleFoodClick = async () => {
                                                             if (foodId && foodId !== "undefined" && foodId !== "null") {
-                                                                // We have a valid ID, navigate directly
+                                                                // We have a valid id, navigate directly
                                                                 const navigateUrl = `/food/${foodId}`;
                                                                 console.log(
-                                                                    "🚀 Navigating with ObjectId to:",
+                                                                    "🚀 Navigating with food ID to:",
                                                                     navigateUrl
                                                                 );
                                                                 navigate(navigateUrl);
                                                             } else {
-                                                                // No valid ID, try to find food by name
+                                                                // No valid id, try to find food by name
                                                                 console.log(
-                                                                    "⚠️ No valid ObjectId found, trying to find food by name:",
+                                                                    "⚠️ No valid ID found, trying to find food by name:",
                                                                     item.name
                                                                 );
                                                                 try {
@@ -557,14 +626,24 @@ const ChatBotWidget = () => {
                                                                             "✅ Found food by name:",
                                                                             foundFood
                                                                         );
-                                                                        // Use _id (ObjectId) for navigation
-                                                                        const objectId = foundFood._id || foundFood.id;
-                                                                        const navigateUrl = `/food/${objectId}`;
-                                                                        console.log(
-                                                                            "🚀 Navigating with found ObjectId to:",
-                                                                            navigateUrl
-                                                                        );
-                                                                        navigate(navigateUrl);
+                                                                        // Use id for navigation
+                                                                        const objectId = foundFood.id;
+                                                                        if (objectId) {
+                                                                            const navigateUrl = `/food/${objectId}`;
+                                                                            console.log(
+                                                                                "🚀 Navigating with found ID to:",
+                                                                                navigateUrl
+                                                                            );
+                                                                            navigate(navigateUrl);
+                                                                        } else {
+                                                                            console.log(
+                                                                                "❌ Found food but no id:",
+                                                                                foundFood
+                                                                            );
+                                                                            alert(
+                                                                                `Không tìm thấy ID cho món "${item.name}"`
+                                                                            );
+                                                                        }
                                                                     } else {
                                                                         console.log(
                                                                             "❌ Food not found by name:",
@@ -589,36 +668,110 @@ const ChatBotWidget = () => {
                                                         return (
                                                             <div
                                                                 key={item.name + idx}
-                                                                className="border rounded-lg p-3 mb-2 shadow hover:bg-gray-50 cursor-pointer transition"
+                                                                className="border rounded-lg p-3 mb-2 shadow hover:bg-gray-50 cursor-pointer transition flex items-center gap-3"
                                                                 onClick={handleFoodClick}
                                                             >
-                                                                <div className="font-bold text-base text-red-600">
-                                                                    {item.name}
-                                                                </div>
-                                                                <div className="text-sm text-gray-700 mb-1">
-                                                                    {item.description}
-                                                                </div>
-                                                                <div className="text-xs text-gray-500 mb-1">
-                                                                    Giá:{" "}
-                                                                    <span className="font-semibold">
-                                                                        {item.price} VNĐ
-                                                                    </span>
-                                                                </div>
-                                                                <div className="text-xs text-gray-400">
-                                                                    Thành phần:{" "}
-                                                                    {item.ingredients && item.ingredients.join(", ")}
-                                                                </div>
-                                                                {foodId &&
-                                                                foodId !== "undefined" &&
-                                                                foodId !== "null" ? (
-                                                                    <div className="text-xs text-green-600">
-                                                                        ✅ ObjectId: {foodId}
+                                                                <img
+                                                                    src={
+                                                                        item.image ||
+                                                                        item.imageUrl ||
+                                                                        "https://via.placeholder.com/64x64?text=No+Image"
+                                                                    }
+                                                                    alt={item.name}
+                                                                    className="w-16 h-16 object-cover rounded-md border"
+                                                                    onError={(e) => {
+                                                                        e.target.src =
+                                                                            "https://via.placeholder.com/64x64?text=No+Image";
+                                                                    }}
+                                                                />
+                                                                <div className="flex-1">
+                                                                    <div className="font-bold text-base text-red-600">
+                                                                        {item.name}
                                                                     </div>
-                                                                ) : (
-                                                                    <div className="text-xs text-orange-500">
-                                                                        ⚠️ Sẽ tìm theo tên món
+
+                                                                    {/* Mô tả sản phẩm */}
+                                                                    {item.description && (
+                                                                        <div className="text-xs text-gray-600 mb-2 line-clamp-2">
+                                                                            {item.description}
+                                                                        </div>
+                                                                    )}
+
+                                                                    {/* Giá và category */}
+                                                                    <div className="flex items-center justify-between mb-2">
+                                                                        <div className="text-sm font-bold text-orange-600">
+                                                                            {item.price} VNĐ
+                                                                        </div>
+                                                                        {item.category && (
+                                                                            <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                                                                                {item.category}
+                                                                            </div>
+                                                                        )}
                                                                     </div>
-                                                                )}
+
+                                                                    {/* Nguyên liệu */}
+                                                                    {item.ingredients && (
+                                                                        <div className="text-xs text-gray-500 mb-2">
+                                                                            <span className="font-medium">
+                                                                                Nguyên liệu:{" "}
+                                                                            </span>
+                                                                            {Array.isArray(item.ingredients)
+                                                                                ? item.ingredients.join(", ")
+                                                                                : item.ingredients}
+                                                                        </div>
+                                                                    )}
+
+                                                                    {/* Rating nếu có */}
+                                                                    {item.rating && (
+                                                                        <div className="flex items-center gap-1 mb-2">
+                                                                            <span className="text-yellow-500">⭐</span>
+                                                                            <span className="text-xs text-gray-600">
+                                                                                {item.rating} / 5
+                                                                            </span>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {/* Calories nếu có */}
+                                                                    {item.calories && (
+                                                                        <div className="text-xs text-gray-500 mb-2">
+                                                                            <span className="font-medium">
+                                                                                🔥 Calories:{" "}
+                                                                            </span>
+                                                                            {item.calories} kcal
+                                                                        </div>
+                                                                    )}
+
+                                                                    {/* Thời gian chuẩn bị nếu có */}
+                                                                    {item.prepTime && (
+                                                                        <div className="text-xs text-gray-500 mb-2">
+                                                                            <span className="font-medium">
+                                                                                🕒 Thời gian:{" "}
+                                                                            </span>
+                                                                            {item.prepTime}
+                                                                        </div>
+                                                                    )}
+
+                                                                    {/* Độ cay nếu có */}
+                                                                    {item.spiceLevel && (
+                                                                        <div className="text-xs text-gray-500 mb-2">
+                                                                            <span className="font-medium">
+                                                                                🌶️ Độ cay:{" "}
+                                                                            </span>
+                                                                            {item.spiceLevel}
+                                                                        </div>
+                                                                    )}
+
+                                                                    {foodId &&
+                                                                    foodId !== "undefined" &&
+                                                                    foodId !== "null" ? (
+                                                                        <div className="text-xs text-green-600">
+                                                                            ✅ ID: {foodId}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="text-xs text-orange-500">
+                                                                            ⚠️ Sẽ tìm theo tên món (không có id)
+                                                                        </div>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         );
                                                     })}

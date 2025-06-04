@@ -62,19 +62,60 @@ const Cart = () => {
         try {
             setLoading(true);
             if (userId) {
+                console.log("🛒 Fetching cart for userId:", userId);
                 const response = await axios.get(`http://localhost:8080/api/carts/${userId}`, {
                     headers: {
                         Authorization: `Bearer ${getTokenFromLocalStorage()}`,
                     },
                 });
-                console.log("Cart data received:", response.data);
-                setItems(response.data.items);
+                console.log("📦 Cart data received:", response.data);
+                console.log("📦 Cart items structure:", response.data.items);
+                console.log("📦 Number of items:", response.data.items?.length || 0);
+
+                // Debug each item structure
+                if (response.data.items && response.data.items.length > 0) {
+                    response.data.items.forEach((item, index) => {
+                        console.log(`📦 Item ${index}:`, {
+                            foodId: item.foodId,
+                            name: item.name,
+                            price: item.price,
+                            quantity: item.quantity,
+                            image: item.image,
+                            imageUrl: item.imageUrl,
+                            checked: item.checked,
+                            hasValidData: !!(item.name && item.price > 0),
+                        });
+
+                        // Specific warnings for problematic items
+                        if (!item.name) {
+                            console.warn(`⚠️ Item ${index} missing name! FoodId: ${item.foodId}`);
+                        }
+                        if (!item.price || item.price === 0) {
+                            console.warn(
+                                `⚠️ Item ${index} missing or zero price! FoodId: ${item.foodId}, Price: ${item.price}`
+                            );
+                        }
+                        if (!item.image && !item.imageUrl) {
+                            console.warn(`⚠️ Item ${index} missing image! FoodId: ${item.foodId}`);
+                        }
+                    });
+                }
+
+                // Ensure items have checked property
+                const itemsWithChecked = (response.data.items || []).map((item) => ({
+                    ...item,
+                    checked: item.checked !== undefined ? item.checked : true,
+                }));
+
+                console.log("📦 Processed items:", itemsWithChecked);
+                setItems(itemsWithChecked);
             }
             setLoading(false);
         } catch (err) {
             setError(err);
             setLoading(false);
-            console.error("Error fetching cart:", err);
+            console.error("❌ Error fetching cart:", err);
+            console.error("❌ Error details:", err.response?.data || err.message);
         }
     };
 
@@ -256,8 +297,12 @@ const Cart = () => {
                                             {/* Product Image */}
                                             <div className="relative">
                                                 <img
-                                                    src={item.imageUrl || item.image}
-                                                    alt={item.name}
+                                                    src={
+                                                        item.imageUrl ||
+                                                        item.image ||
+                                                        "https://via.placeholder.com/80x80?text=No+Image"
+                                                    }
+                                                    alt={item.name || "Unknown Food"}
                                                     className="w-20 h-20 object-cover rounded-xl shadow-md"
                                                     onError={(e) => {
                                                         e.target.src =
@@ -274,14 +319,20 @@ const Cart = () => {
                                             {/* Product Info */}
                                             <div className="flex-1">
                                                 <h3 className="text-lg font-semibold text-gray-800 mb-1">
-                                                    {item.name}
+                                                    {item.name || "Unknown Food"}
                                                 </h3>
                                                 <p className="text-2xl font-bold text-red-600">
-                                                    {(item.price * item.quantity).toLocaleString()}đ
+                                                    {((item.price || 0) * (item.quantity || 1)).toLocaleString()}đ
                                                 </p>
                                                 <p className="text-sm text-gray-500">
-                                                    {item.price.toLocaleString()}đ / món
+                                                    {(item.price || 0).toLocaleString()}đ / món
                                                 </p>
+                                                {/* Debug info */}
+                                                {(!item.name || !item.price) && (
+                                                    <p className="text-xs text-red-500 mt-1">
+                                                        ⚠️ Missing data - FoodId: {item.foodId}
+                                                    </p>
+                                                )}
                                             </div>
 
                                             {/* Quantity Controls */}
@@ -447,7 +498,8 @@ const Cart = () => {
             </div>
 
             {/* Add CSS Animation */}
-            <style jsx>{`
+            <style>
+                {`
                 @keyframes fadeInUp {
                     from {
                         opacity: 0;
@@ -462,7 +514,8 @@ const Cart = () => {
                 .group:hover .group-hover\\:scale-110 {
                     transform: scale(1.1);
                 }
-            `}</style>
+                `}
+            </style>
         </div>
     );
 };

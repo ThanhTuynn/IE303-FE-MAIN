@@ -50,7 +50,7 @@ const Menu = () => {
                 console.log("User data from localStorage:", user); // Log parsed user data
                 setUserId(user._id); // Use user._id as the userId
                 console.log("userId set to:", user.id); // Log the value being set
-                console.log("userId set to (using _id):", user._id); // Log the value being set from _id
+                console.log("userId set to (using _id):", user.__id); // Log the value being set from _id
             } catch (e) {
                 console.error("Failed to parse user data from localStorage:", e);
                 // Handle error, maybe clear local storage and ask to login again
