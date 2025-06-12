@@ -1,115 +1,167 @@
-# React + TypeScript + Vite
+# [IE303.P22] - HỆ THỐNG ĐẶT ĐỒ ĂN THÔNG MINH UNIFOODIE
 
-[English](#english) | [Tiếng Việt](#tiếng-việt)
+**Trường:** Đại học Công nghệ Thông tin - ĐHQG-HCM  
+**GVHD:** ThS. Nguyễn Thành Luân  
+**Nhóm:** [10]
 
-<a name="english"></a>
-## English
+## THÀNH VIÊN NHÓM
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+| STT | Họ tên | MSSV |
+|-----|--------|------|
+| 1 | Nguyễn Ngọc Thanh Tuyền | 22521631 |
+| 2 | Nguyễn Công Nam Triều | 22521533 |
+| 3 | Trần Quốc Trung | 22521569 |
+| 4 | Võ Thị Phương Uyên | 22521645 |
 
-Currently, two official plugins are available:
+## TÓM TẮT DỰ ÁN
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+**UniFoodie** là hệ thống đặt đồ ăn thông minh tích hợp AI để cung cấp trải nghiệm cá nhân hóa cho người dùng.
 
-### Expanding the ESLint configuration
+### Mục tiêu chính
+- Xây dựng hệ thống khuyến nghị AI dựa trên hành vi người dùng
+- Phát triển chatbot tư vấn món ăn tự động
+- Tạo platform đặt đồ ăn hiện đại với admin dashboard
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+## TÍNH NĂNG CHÍNH
+
+### AI & Machine Learning
+- **Recommendation System:** Kết hợp Lọc cộng tác (Collaborative Filtering) + Lọc dựa trên nội dung (Content-based Filtering)
+- **Smart Search:** AI nhận diện nguyên liệu từ văn bản
+- **Chatbot:** Tư vấn món ăn tự động dựa theo yêu cầu người dùng
+- **Learning:** Cải thiện độ chính xác dựa trên lịch sử đặt hàng
+
+### Frontend (React + TypeScript)
+- **User Features:** Duyệt thực đơn, giỏ hàng thông minh, theo dõi đơn hàng, yêu thích
+- **Admin Dashboard:** Quản lý món ăn, quản lý đơn hàng, phân tích dữ liệu, hỗ trợ trò chuyện
+- **UI/UX:** Thiết kế responsive, cập nhật thời gian thực, hỗ trợ PWA
+
+### Backend (Spring Boot + Java)
+- **API:** RESTful, JWT auth, kiểm soát truy cập dựa trên vai trò
+- **Integration:** MongoDB Atlas, Cloudinary, PayOS payment
+- **Real-time:** WebSocket chat, thông báo đơn hàng
+
+###  Database (MongoDB)
+
+## CÔNG NGHỆ CHÍNH
+
+### Frontend
+- **React 19.1.0** + **TypeScript 5.8.3** + **Vite 6.3.5**
+- **Tailwind CSS 4.1.8** 
+- **Axios 1.9.0** 
+- **Ant Design 5.25.3** 
+
+### Backend
+- **Java 17** + **Spring Boot 3.1.5**
+- **Spring Security** 
+- **Spring Data MongoDB** 
+- **JWT** 
+
+### Database
+- **MongoDB Atlas 7.0** 
+
+### AI/ML
+- **Python 3.11** + **Flask 3.0**
+- **Pandas 2.1** + **NumPy 1.25** + **Scikit-learn 1.3**
+- **TF-IDF Vectorizer** + **Cosine Similarity**
+
+### AI Algorithms
+```python
+def hybrid_recommendation(user_id, num_results=5):
+    # Kết hợp collaborative và content-based filtering
+    collaborative_score = collaborative_filtering(user_id)
+    content_score = content_based_filtering(user_id)
+    alpha = calculate_dynamic_weight(user_id)
+    final_score = alpha * collaborative_score + (1-alpha) * content_score
+    return rank_recommendations(final_score)[:num_results]
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## YÊU CẦU HỆ THỐNG
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Yêu cầu phần mềm
+- **Node.js** >= 16.0.0 
+- **Java Development Kit (JDK)** >= 17
+- **Python** >= 3.8 
+- **MongoDB** >= 5.0 
+- **Git** >= 2.30
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+### Công cụ khuyến nghị
+- **IDE:** Visual Studio Code
+- **Database:** MongoDB Compass
+- **API Testing:** Postman
+
+## HƯỚNG DẪN CÀI ĐẶT
+
+#### Bước 1: Clone Repository
+```powershell
+git clone https://github.com/ThanhTuynn/IE303-FE-MAIN.git
+git clone https://github.com/trungtran0165/UniFoodie_BE.git
 ```
 
-<a name="tiếng-việt"></a>
-## Tiếng Việt
-
-Template này cung cấp một cài đặt tối thiểu để bắt đầu làm việc với React trong Vite, bao gồm HMR và một số quy tắc ESLint.
-
-Hiện tại, có hai plugin chính thức có sẵn:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) sử dụng [Babel](https://babeljs.io/) cho Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) sử dụng [SWC](https://swc.rs/) cho Fast Refresh
-
-### Mở rộng cấu hình ESLint
-
-Nếu bạn đang phát triển một ứng dụng cho môi trường production, chúng tôi khuyến nghị cập nhật cấu hình để bật các quy tắc lint có nhận thức về kiểu dữ liệu:
-
-```js
-export default tseslint.config({
-  extends: [
-    // Xóa ...tseslint.configs.recommended và thay thế bằng cái này
-    ...tseslint.configs.recommendedTypeChecked,
-    // Hoặc, sử dụng cái này cho các quy tắc nghiêm ngặt hơn
-    ...tseslint.configs.strictTypeChecked,
-    // Tùy chọn, thêm cái này cho các quy tắc về phong cách
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // các tùy chọn khác...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+#### Bước 2: Thiết lập Backend (Java Spring Boot)
+```powershell
+cd UniFoodie_BE
+mvn clean install
 ```
 
-Bạn cũng có thể cài đặt [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) và [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) cho các quy tắc lint đặc thù của React:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Thêm các plugin react-x và react-dom
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // các quy tắc khác...
-    // Bật các quy tắc typescript được khuyến nghị
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+Tạo file `src/main/resources/application.properties`:
+```properties
+# Database Configuration (MongoDB Atlas)
+spring.data.mongodb.uri=mongodb+srv://username:password@cluster.mongodb.net/unifoodie
+# JWT Configuration
+jwt.secret=your-jwt-secret-key
+jwt.expiration=86400000
+# Cloudinary Configuration
+cloudinary.cloud-name=your-cloud-name
+cloudinary.api-key=your-api-key
+cloudinary.api-secret=your-api-secret
+# PayOS Configuration
+payos.client-id=your-client-id
+payos.api-key=your-api-key
+payos.checksum-key=your-checksum-key
+# Server Configuration
+server.port=8080
 ```
+
+```powershell
+mvn spring-boot:run
+```
+Backend: `http://localhost:8080`
+
+#### Bước 3: Thiết lập AI Service (Python)
+```powershell
+cd ../UniFoodie_BE/ai_recommendation
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+Cấu hình `config.py`:
+```python
+MONGO_URI = "mongodb+srv://username:password@cluster.mongodb.net/unifoodie"
+DB_NAME = "unifoodie"
+```
+
+```powershell
+python app.py
+```
+AI Service: `http://localhost:5000`
+
+#### Bước 4: Thiết lập Frontend (React + TypeScript)
+```powershell
+cd IE303-FE-MAIN
+npm install
+```
+
+Tạo file `.env.local`:
+```env
+VITE_API_BASE_URL=http://localhost:8080/api
+VITE_AI_API_BASE_URL=http://localhost:5000
+```
+
+```powershell
+npm run dev
+```
+Frontend: `http://localhost:5173`
+
+
