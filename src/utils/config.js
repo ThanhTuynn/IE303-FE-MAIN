@@ -2,9 +2,9 @@
 const isDevelopment = import.meta.env.MODE === 'development';
 
 export const API_CONFIG = {
-    BASE_URL: import.meta.env.VITE_API_BASE_URL || (isDevelopment
-        ? 'http://localhost:8080/api'
-        : 'https://unifoodiebe-production.up.railway.app/api'), // Railway Backend URL
+    BASE_URL: isDevelopment
+        ? (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api')
+        : (import.meta.env.VITE_API_BASE_URL || 'https://unifoodiebe-production.up.railway.app/api'), // Railway Backend URL
 
     // N8N Webhook URL (từ n8n interface)
     N8N_WEBHOOK_URL: import.meta.env.VITE_N8N_WEBHOOK_URL || 'http://localhost:5678/webhook/577f3a96-e095-4764-a55c-baad9ed92617/chat',
