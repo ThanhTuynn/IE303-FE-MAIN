@@ -1,6 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
-import { X, MessageCircle, User, Bot, Send } from "lucide-react";
-import { API_CONFIG, buildApiUrl } from "../../utils/config";
+import { X, MessageCircle, User, Bot, Send, RefreshCw } from "lucide-react";
+import {
+    API_CONFIG,
+    buildApiUrl,
+    generateSessionId,
+    getStoredSessionId,
+    setStoredSessionId,
+    clearStoredSessionId,
+} from "../../utils/config";
 import { useNavigate } from "react-router-dom";
 import {
     getConversationMessages,
@@ -12,6 +19,7 @@ const ChatBotWidget = () => {
     const [open, setOpen] = useState(false);
     const [chatType, setChatType] = useState(null); // 'admin' | 'chatbot'
     const [conversationId, setConversationId] = useState(null);
+    const [chatbotSessionId, setChatbotSessionId] = useState(null); // Unique session ID for chatbot
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
@@ -29,6 +37,18 @@ const ChatBotWidget = () => {
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
+
+    // Load stored sessionId when component mounts
+    useEffect(() => {
+        if (chatType === "chatbot" && !chatbotSessionId) {
+            const storedSessionId = getStoredSessionId(chatType);
+            if (storedSessionId) {
+                setChatbotSessionId(storedSessionId);
+                setConversationId(storedSessionId);
+                console.log("🔄 Loaded stored sessionId:", storedSessionId);
+            }
+        }
+    }, [chatType, chatbotSessionId]);
 
     // Polling for new messages when chatting with admin
     useEffect(() => {
@@ -60,9 +80,28 @@ const ChatBotWidget = () => {
             setLoading(true);
             setError(null);
 
-            const data = await startChatConversation({ chatType: type });
-            setConversationId(data.conversationId);
-            setChatType(type);
+            // Generate new sessionId for chatbot type
+            if (type === "chatbot") {
+                // Check if there's already a stored session for this chat type
+                let sessionId = getStoredSessionId(type);
+
+                // Always create a new session when starting a new conversation
+                sessionId = generateSessionId();
+                setChatbotSessionId(sessionId);
+                setStoredSessionId(type, sessionId);
+
+                console.log("🆔 Generated new chatbot sessionId:", sessionId);
+
+                // For chatbot, we don't need to call backend startChatConversation
+                // We'll use the generated sessionId directly
+                setChatType(type);
+                setConversationId(sessionId); // Use sessionId as conversationId for consistency
+            } else {
+                // For admin chat, use the existing backend logic
+                const data = await startChatConversation({ chatType: type });
+                setConversationId(data.conversationId);
+                setChatType(type);
+            }
 
             // Set initial welcome message
             const welcomeMessage =
@@ -114,7 +153,7 @@ const ChatBotWidget = () => {
                 console.log("N8N URL:", API_CONFIG.N8N_WEBHOOK_URL);
 
                 const payload = {
-                    sessionId: conversationId || "7eb5a424749c40abbc857a24e516ce01",
+                    sessionId: chatbotSessionId || conversationId || generateSessionId(),
                     action: "sendMessage",
                     chatInput: userMessage.content,
                 };
@@ -288,12 +327,48 @@ const ChatBotWidget = () => {
     };
 
     const resetChat = () => {
+        // Clear stored session for the current chat type
+        if (chatType) {
+            clearStoredSessionId(chatType);
+        }
+
         setChatType(null);
         setConversationId(null);
+        setChatbotSessionId(null);
         setMessages([]);
         setError(null);
         setTyping(false);
         setLoading(false);
+    };
+
+    const startNewChatSession = () => {
+        if (chatType === "chatbot") {
+            // Generate new sessionId and reset messages
+            const newSessionId = generateSessionId();
+            setChatbotSessionId(newSessionId);
+            setConversationId(newSessionId);
+            setStoredSessionId(chatType, newSessionId);
+
+            console.log("🆔 Started new chatbot session:", newSessionId);
+
+            // Reset messages with welcome message
+            setMessages([
+                {
+                    id: Date.now(),
+                    content:
+                        "Xin chào! Tôi là chatbot của UniFoodie. Tôi có thể giúp bạn:\n• Tìm kiếm món ăn\n• Các thông tin về UniFoodie\nBạn cần hỗ trợ gì?",
+                    isUser: false,
+                    timestamp: new Date().toISOString(),
+                },
+            ]);
+
+            setError(null);
+            setTyping(false);
+            setLoading(false);
+        } else {
+            // For admin chat, just reset to selection screen
+            resetChat();
+        }
     };
 
     const closeChat = () => {
@@ -338,9 +413,21 @@ const ChatBotWidget = () => {
                                 </div>
                             </div>
                         </div>
-                        <button onClick={closeChat} className="hover:bg-red-700 p-1 rounded transition-colors">
-                            <X size={20} />
-                        </button>
+                        <div className="flex items-center gap-2">
+                            {/* New Chat Session Button - Only show for chatbot */}
+                            {chatType === "chatbot" && (
+                                <button
+                                    onClick={startNewChatSession}
+                                    className="hover:bg-red-700 p-1 rounded transition-colors"
+                                    title="Tạo phiên chat mới"
+                                >
+                                    <RefreshCw size={16} />
+                                </button>
+                            )}
+                            <button onClick={closeChat} className="hover:bg-red-700 p-1 rounded transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Error Message */}

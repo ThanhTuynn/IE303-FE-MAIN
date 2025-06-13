@@ -35,4 +35,28 @@ export const buildApiUrl = (endpoint) => {
     return `${API_CONFIG.BASE_URL}${endpoint}`;
 };
 
+// Utility function to generate unique session ID
+export const generateSessionId = () => {
+    // Generate random UUID-like string
+    const timestamp = Date.now().toString(36);
+    const randomStr = Math.random().toString(36).substring(2, 15);
+    return `${timestamp}-${randomStr}-${Math.random().toString(36).substring(2, 15)}`;
+};
+
+// Utility functions for session management
+export const getStoredSessionId = (chatType) => {
+    const key = `unifoodie_${chatType}_session`;
+    return localStorage.getItem(key);
+};
+
+export const setStoredSessionId = (chatType, sessionId) => {
+    const key = `unifoodie_${chatType}_session`;
+    localStorage.setItem(key, sessionId);
+};
+
+export const clearStoredSessionId = (chatType) => {
+    const key = `unifoodie_${chatType}_session`;
+    localStorage.removeItem(key);
+};
+
 export default API_CONFIG; 
