@@ -34,6 +34,7 @@ const Menu = () => {
     const [lastSearchQuery, setLastSearchQuery] = useState("");
 
     useEffect(() => {
+        console.log("Menu component mounted or dependencies changed.");
         const token = localStorage.getItem("jwtToken");
         const userData = localStorage.getItem("userData");
 
@@ -46,7 +47,10 @@ const Menu = () => {
         } else {
             try {
                 const user = JSON.parse(userData);
-                setUserId(user._id);
+                console.log("User data from localStorage:", user); // Log parsed user data
+                setUserId(user._id); // Use user._id as the userId
+                console.log("userId set to:", user.id); // Log the value being set
+                console.log("userId set to (using _id):", user.__id); // Log the value being set from _id
             } catch (e) {
                 console.error("Failed to parse user data from localStorage:", e);
                 // Handle error, maybe clear local storage and ask to login again
@@ -162,16 +166,14 @@ const Menu = () => {
     };
 
     const handleAddToCart = async (food) => {
-        const quantity = quantities[food.id];
-        const token = localStorage.getItem("jwtToken");
-
-        if (!token || !userId) {
-            toast.warning("Vui lòng đăng nhập để thêm vào giỏ hàng!");
-            navigate("/login");
+        if (!userId) {
+            toast.error("Vui lòng đăng nhập để thêm món vào giỏ hàng!");
+            navigate('/login'); // Assuming '/login' is your login route
             return;
         }
-
-        if (quantity > 0 && userId) {
+        // Existing logic for adding to cart
+        const quantity = quantities[food.id] || 0;
+        if (quantity > 0) {
             try {
                 const itemToAdd = {
                     foodId: food.id,
@@ -183,7 +185,7 @@ const Menu = () => {
 
                 await axios.post(`http://localhost:8080/api/carts/${userId}/items`, itemToAdd, {
                     headers: {
-                        Authorization: `Bearer ${token}`,
+                        Authorization: `Bearer ${localStorage.getItem("jwtToken")}`,
                     },
                 });
 
